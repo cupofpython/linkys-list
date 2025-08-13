@@ -8,7 +8,7 @@ This is a simple to-do list application that uses 2 base images and 1 applicatio
 
 To run the application locally, run `docker compose up --build` and access the frontend at `http://localhost:3000/`.
 
-It uses GitHub actions to build and push images to Docker Hub, scan the images with Grype, and generate an SBOM with Syft (WIP).
+It uses GitHub actions to build and push images to Docker Hub, scan the images with Grype, and comments the scan results on PR action.
 
 On the Chainguard branch, the Dockerfiles are converted to use Chainguard images.
 
