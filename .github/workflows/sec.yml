@@ -77,13 +77,13 @@ jobs:
             echo "" >> $GITHUB_STEP_SUMMARY
             
             # Show top 10 critical/high vulnerabilities and capture for output
-            if [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 0 ]; then
-              echo "### Top Critical/High Vulnerabilities:" >> $GITHUB_STEP_SUMMARY
-              echo "" >> $GITHUB_STEP_SUMMARY
-              TOP_VULNS=$(jq -r '.matches[] | select(.vulnerability.severity == "Critical" or .vulnerability.severity == "High") | "- **\(.vulnerability.id)** (\(.vulnerability.severity)): \(.vulnerability.description // "No description")" | .[0:200]' frontend-scan.json 2>/dev/null | head -10 | tr '\n' '|' || echo "")
-              echo "top_vulns=$TOP_VULNS" >> $GITHUB_OUTPUT
-              jq -r '.matches[] | select(.vulnerability.severity == "Critical" or .vulnerability.severity == "High") | "- **\(.vulnerability.id)** (\(.vulnerability.severity)): \(.vulnerability.description // "No description")" | .[0:200]' frontend-scan.json 2>/dev/null | head -10 >> $GITHUB_STEP_SUMMARY || echo "Could not parse vulnerabilities" >> $GITHUB_STEP_SUMMARY
-            fi
+           if [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 0 ]; then
+            echo "### Top Critical/High Vulnerabilities:" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            # Create a properly escaped JSON array instead of pipe-separated string
+            TOP_VULNS=$(jq -r '.matches[] | select(.vulnerability.severity == "Critical" or .vulnerability.severity == "High") | "- **\(.vulnerability.id)** (\(.vulnerability.severity)): \(.vulnerability.description // "No description")"' frontend-scan.json 2>/dev/null | head -10 | jq -R -s -c 'split("\n")[:-1]' || echo '[]')
+            echo "top_vulns=$TOP_VULNS" >> $GITHUB_OUTPUT
+            jq -r '.matches[] | select(.vulnerability.severity == "Critical" or .vulnerability.severity == "High") | "- **\(.vulnerability.id)** (\(.vulnerability.severity)): \(.vulnerability.description // "No description")"' frontend-scan.json 2>/dev/null | head -10 >> $GITHUB_STEP_SUMMARY || echo "Could not parse vulnerabilities" >> $GITHUB_STEP_SUMMARY
           else
             echo "found=false" >> $GITHUB_OUTPUT
             echo "❌ Frontend scan file not found" >> $GITHUB_STEP_SUMMARY
@@ -120,13 +120,13 @@ jobs:
             echo "" >> $GITHUB_STEP_SUMMARY
             
             # Show top 10 critical/high vulnerabilities and capture for output
-            if [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 0 ]; then
-              echo "### Top Critical/High Vulnerabilities:" >> $GITHUB_STEP_SUMMARY
-              echo "" >> $GITHUB_STEP_SUMMARY
-              TOP_VULNS=$(jq -r '.matches[] | select(.vulnerability.severity == "Critical" or .vulnerability.severity == "High") | "- **\(.vulnerability.id)** (\(.vulnerability.severity)): \(.vulnerability.description // "No description")" | .[0:200]' backend-scan.json 2>/dev/null | head -10 | tr '\n' '|' || echo "")
-              echo "top_vulns=$TOP_VULNS" >> $GITHUB_OUTPUT
-              jq -r '.matches[] | select(.vulnerability.severity == "Critical" or .vulnerability.severity == "High") | "- **\(.vulnerability.id)** (\(.vulnerability.severity)): \(.vulnerability.description // "No description")" | .[0:200]' backend-scan.json 2>/dev/null | head -10 >> $GITHUB_STEP_SUMMARY || echo "Could not parse vulnerabilities" >> $GITHUB_STEP_SUMMARY
-            fi
+          if [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 0 ]; then
+            echo "### Top Critical/High Vulnerabilities:" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            # Create a properly escaped JSON array instead of pipe-separated string
+            TOP_VULNS=$(jq -r '.matches[] | select(.vulnerability.severity == "Critical" or .vulnerability.severity == "High") | "- **\(.vulnerability.id)** (\(.vulnerability.severity)): \(.vulnerability.description // "No description")"' backend-scan.json 2>/dev/null | head -10 | jq -R -s -c 'split("\n")[:-1]' || echo '[]')
+            echo "top_vulns=$TOP_VULNS" >> $GITHUB_OUTPUT
+            jq -r '.matches[] | select(.vulnerability.severity == "Critical" or .vulnerability.severity == "High") | "- **\(.vulnerability.id)** (\(.vulnerability.severity)): \(.vulnerability.description // "No description")"' backend-scan.json 2>/dev/null | head -10 >> $GITHUB_STEP_SUMMARY || echo "Could not parse vulnerabilities" >> $GITHUB_STEP_SUMMARY
           else
             echo "found=false" >> $GITHUB_OUTPUT
             echo "❌ Backend scan file not found" >> $GITHUB_STEP_SUMMARY
@@ -141,30 +141,34 @@ jobs:
             const backendFound = '${{ steps.backend-results.outputs.found }}' === 'true';
             
             let comment = '## 🛡️ Security Scan Results\n\n';
-            comment += `**Image Tag:** \`${{ inputs.IMAGE_TAG }}\`\n\n`;
+            comment += 'Image Tag: `${{ inputs.IMAGE_TAG }}`\n\n';
             
             if (frontendFound) {
-              const fCritical = '${{ steps.frontend-results.outputs.critical }}';
-              const fHigh = '${{ steps.frontend-results.outputs.high }}';
-              const fMedium = '${{ steps.frontend-results.outputs.medium }}';
-              const fLow = '${{ steps.frontend-results.outputs.low }}';
-              const fVulns = '${{ steps.frontend-results.outputs.top_vulns }}';
+              const fCritical = '${{ steps.frontend-results.outputs.critical }}' || '0';
+              const fHigh = '${{ steps.frontend-results.outputs.high }}' || '0';
+              const fMedium = '${{ steps.frontend-results.outputs.medium }}' || '0';
+              const fLow = '${{ steps.frontend-results.outputs.low }}' || '0';
+              const fVulnsRaw = '${{ steps.frontend-results.outputs.top_vulns }}' || '[]';
               
               comment += '### 🖥️ Frontend Image\n';
-              comment += `| Severity | Count |\n`;
-              comment += `|----------|-------|\n`;
-              comment += `| 🔴 Critical | ${fCritical} |\n`;
-              comment += `| 🟠 High | ${fHigh} |\n`;
-              comment += `| 🟡 Medium | ${fMedium} |\n`;
-              comment += `| 🟢 Low | ${fLow} |\n\n`;
+              comment += '| Severity | Count |\n';
+              comment += '|----------|-------|\n';
+              comment += '| 🔴 Critical | ' + fCritical + ' |\n';
+              comment += '| 🟠 High | ' + fHigh + ' |\n';
+              comment += '| 🟡 Medium | ' + fMedium + ' |\n';
+              comment += '| 🟢 Low | ' + fLow + ' |\n\n';
               
-              if (fVulns && fVulns !== '') {
-                comment += '**Top Critical/High Vulnerabilities:**\n';
-                const vulnList = fVulns.split('|').filter(v => v.trim() !== '');
-                vulnList.forEach(vuln => {
-                  if (vuln.trim()) comment += vuln + '\n';
-                });
-                comment += '\n';
+              try {
+                const fVulns = JSON.parse(fVulnsRaw);
+                if (fVulns && fVulns.length > 0) {
+                  comment += '**Top Critical/High Vulnerabilities:**\n';
+                  fVulns.forEach(vuln => {
+                    if (vuln.trim()) comment += vuln + '\n';
+                  });
+                  comment += '\n';
+                }
+              } catch (e) {
+                console.log('Error parsing frontend vulnerabilities:', e);
               }
             } else {
               comment += '### 🖥️ Frontend Image\n';
@@ -172,27 +176,31 @@ jobs:
             }
             
             if (backendFound) {
-              const bCritical = '${{ steps.backend-results.outputs.critical }}';
-              const bHigh = '${{ steps.backend-results.outputs.high }}';
-              const bMedium = '${{ steps.backend-results.outputs.medium }}';
-              const bLow = '${{ steps.backend-results.outputs.low }}';
-              const bVulns = '${{ steps.backend-results.outputs.top_vulns }}';
+              const bCritical = '${{ steps.backend-results.outputs.critical }}' || '0';
+              const bHigh = '${{ steps.backend-results.outputs.high }}' || '0';
+              const bMedium = '${{ steps.backend-results.outputs.medium }}' || '0';
+              const bLow = '${{ steps.backend-results.outputs.low }}' || '0';
+              const bVulnsRaw = '${{ steps.backend-results.outputs.top_vulns }}' || '[]';
               
               comment += '### 🗄️ Backend Image\n';
-              comment += `| Severity | Count |\n`;
-              comment += `|----------|-------|\n`;
-              comment += `| 🔴 Critical | ${bCritical} |\n`;
-              comment += `| 🟠 High | ${bHigh} |\n`;
-              comment += `| 🟡 Medium | ${bMedium} |\n`;
-              comment += `| 🟢 Low | ${bLow} |\n\n`;
+              comment += '| Severity | Count |\n';
+              comment += '|----------|-------|\n';
+              comment += '| 🔴 Critical | ' + bCritical + ' |\n';
+              comment += '| 🟠 High | ' + bHigh + ' |\n';
+              comment += '| 🟡 Medium | ' + bMedium + ' |\n';
+              comment += '| 🟢 Low | ' + bLow + ' |\n\n';
               
-              if (bVulns && bVulns !== '') {
-                comment += '**Top Critical/High Vulnerabilities:**\n';
-                const vulnList = bVulns.split('|').filter(v => v.trim() !== '');
-                vulnList.forEach(vuln => {
-                  if (vuln.trim()) comment += vuln + '\n';
-                });
-                comment += '\n';
+              try {
+                const bVulns = JSON.parse(bVulnsRaw);
+                if (bVulns && bVulns.length > 0) {
+                  comment += '**Top Critical/High Vulnerabilities:**\n';
+                  bVulns.forEach(vuln => {
+                    if (vuln.trim()) comment += vuln + '\n';
+                  });
+                  comment += '\n';
+                }
+              } catch (e) {
+                console.log('Error parsing backend vulnerabilities:', e);
               }
             } else {
               comment += '### 🗄️ Backend Image\n';
@@ -201,7 +209,7 @@ jobs:
             
             comment += '---\n';
             comment += '📊 *Full scan reports available in workflow artifacts*\n';
-            comment += `🔗 [View workflow run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
+            comment += '🔗 [View workflow run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})';
             
             // Find existing security comment to update or create new one
             const comments = await github.rest.issues.listComments({
