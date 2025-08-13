@@ -45,7 +45,7 @@ jobs:
           output-file: backend-scan.sarif
 
       - name: Upload SARIF files
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: |
             frontend-scan.sarif
