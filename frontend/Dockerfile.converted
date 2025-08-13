@@ -1,0 +1,7 @@
+FROM cgr.dev/chainguard-private/nginx:1.29.0@sha256:1db624b84808951bfdcedc5a33432a1bef12868a3759739c32c92bbec7124341
+
+COPY . /usr/share/nginx/html/
+
+EXPOSE 8080
+
+ENTRYPOINT ["nginx", "-g", "daemon off;"]

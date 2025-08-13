@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  db:
+    image: cgr.dev/chainguard-private/postgres:17@sha256:ad1b485a625c39c96ea837d855dc793a1c0567baaa0bf1b91db57dec0c73c1e6
+    environment:
+      POSTGRES_DB: todoapp
+      POSTGRES_USER: todouser
+      POSTGRES_PASSWORD: todopass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U todouser -d todoapp"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.converted
+    ports:
+      - "5000:5000"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://todouser:todopass@db:5432/todoapp
+    volumes:
+      - ./backend:/app
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.converted
+    ports:
+      - "3000:8080"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
