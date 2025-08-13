@@ -10,7 +10,7 @@ on:
         type: string
 
 env:
-  REGISTRY: samanthamorris684
+  REGISTRY: sammorriscg
   FRONTEND_IMAGE_NAME: cg-e2e-frontend
   BACKEND_IMAGE_NAME: cg-e2e-backend
   USERNAME: ${{ vars.DOCKERHUB_USERNAME }}
