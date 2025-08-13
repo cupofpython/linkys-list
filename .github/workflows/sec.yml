@@ -35,8 +35,8 @@ jobs:
         with:
           image: ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
           fail-build: false
-          output-format: sarif
-          output-file: frontend-scan.sarif
+          output-format: json
+          output-file: frontend-scan.json
 
       - name: Scan image (Backend)
         id: backend-grype
@@ -44,20 +44,20 @@ jobs:
         with:
           image: ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
           fail-build: false
-          output-format: sarif
-          output-file: backend-scan.sarif
+          output-format: json
+          output-file: backend-scan.json
 
       - name: Display Frontend Scan Results
         run: |
           echo "## 🔍 Frontend Security Scan Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
-          if [ -f "frontend-scan.sarif" ]; then
+          if [ -f "frontend-scan.json" ]; then
             # Count vulnerabilities by severity
-            CRITICAL=$(jq '[.matches[] | select(.vulnerability.severity == "Critical")] | length' frontend-scan.sarif 2>/dev/null || echo "0")
-            HIGH=$(jq '[.matches[] | select(.vulnerability.severity == "High")] | length' frontend-scan.sarif 2>/dev/null || echo "0")
-            MEDIUM=$(jq '[.matches[] | select(.vulnerability.severity == "Medium")] | length' frontend-scan.sarif 2>/dev/null || echo "0")
-            LOW=$(jq '[.matches[] | select(.vulnerability.severity == "Low")] | length' frontend-scan.sarif 2>/dev/null || echo "0")
+            CRITICAL=$(jq '[.matches[] | select(.vulnerability.severity == "Critical")] | length' frontend-scan.json 2>/dev/null || echo "0")
+            HIGH=$(jq '[.matches[] | select(.vulnerability.severity == "High")] | length' frontend-scan.json 2>/dev/null || echo "0")
+            MEDIUM=$(jq '[.matches[] | select(.vulnerability.severity == "Medium")] | length' frontend-scan.json 2>/dev/null || echo "0")
+            LOW=$(jq '[.matches[] | select(.vulnerability.severity == "Low")] | length' frontend-scan.json 2>/dev/null || echo "0")
             
             echo "| Severity | Count |" >> $GITHUB_STEP_SUMMARY
             echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
@@ -71,7 +71,7 @@ jobs:
             if [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 0 ]; then
               echo "### Top Critical/High Vulnerabilities:" >> $GITHUB_STEP_SUMMARY
               echo "" >> $GITHUB_STEP_SUMMARY
-              jq -r '.matches[] | select(.vulnerability.severity == "Critical" or .vulnerability.severity == "High") | "- **\(.vulnerability.id)** (\(.vulnerability.severity)): \(.vulnerability.description // "No description")" | .[0:200]' frontend-scan.sarif 2>/dev/null | head -10 >> $GITHUB_STEP_SUMMARY || echo "Could not parse vulnerabilities" >> $GITHUB_STEP_SUMMARY
+              jq -r '.matches[] | select(.vulnerability.severity == "Critical" or .vulnerability.severity == "High") | "- **\(.vulnerability.id)** (\(.vulnerability.severity)): \(.vulnerability.description // "No description")" | .[0:200]' frontend-scan.json 2>/dev/null | head -10 >> $GITHUB_STEP_SUMMARY || echo "Could not parse vulnerabilities" >> $GITHUB_STEP_SUMMARY
             fi
           else
             echo "❌ Frontend scan file not found" >> $GITHUB_STEP_SUMMARY
@@ -83,12 +83,12 @@ jobs:
           echo "## 🔍 Backend Security Scan Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
-          if [ -f "backend-scan.sarif" ]; then
+          if [ -f "backend-scan.json" ]; then
             # Count vulnerabilities by severity
-            CRITICAL=$(jq '[.matches[] | select(.vulnerability.severity == "Critical")] | length' backend-scan.sarif 2>/dev/null || echo "0")
-            HIGH=$(jq '[.matches[] | select(.vulnerability.severity == "High")] | length' backend-scan.sarif 2>/dev/null || echo "0")
-            MEDIUM=$(jq '[.matches[] | select(.vulnerability.severity == "Medium")] | length' backend-scan.sarif 2>/dev/null || echo "0")
-            LOW=$(jq '[.matches[] | select(.vulnerability.severity == "Low")] | length' backend-scan.sarif 2>/dev/null || echo "0")
+            CRITICAL=$(jq '[.matches[] | select(.vulnerability.severity == "Critical")] | length' backend-scan.json 2>/dev/null || echo "0")
+            HIGH=$(jq '[.matches[] | select(.vulnerability.severity == "High")] | length' backend-scan.json 2>/dev/null || echo "0")
+            MEDIUM=$(jq '[.matches[] | select(.vulnerability.severity == "Medium")] | length' backend-scan.json 2>/dev/null || echo "0")
+            LOW=$(jq '[.matches[] | select(.vulnerability.severity == "Low")] | length' backend-scan.json 2>/dev/null || echo "0")
             
             echo "| Severity | Count |" >> $GITHUB_STEP_SUMMARY
             echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
@@ -102,7 +102,7 @@ jobs:
             if [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 0 ]; then
               echo "### Top Critical/High Vulnerabilities:" >> $GITHUB_STEP_SUMMARY
               echo "" >> $GITHUB_STEP_SUMMARY
-              jq -r '.matches[] | select(.vulnerability.severity == "Critical" or .vulnerability.severity == "High") | "- **\(.vulnerability.id)** (\(.vulnerability.severity)): \(.vulnerability.description // "No description")" | .[0:200]' backend-scan.sarif 2>/dev/null | head -10 >> $GITHUB_STEP_SUMMARY || echo "Could not parse vulnerabilities" >> $GITHUB_STEP_SUMMARY
+              jq -r '.matches[] | select(.vulnerability.severity == "Critical" or .vulnerability.severity == "High") | "- **\(.vulnerability.id)** (\(.vulnerability.severity)): \(.vulnerability.description // "No description")" | .[0:200]' backend-scan.json 2>/dev/null | head -10 >> $GITHUB_STEP_SUMMARY || echo "Could not parse vulnerabilities" >> $GITHUB_STEP_SUMMARY
             fi
           else
             echo "❌ Backend scan file not found" >> $GITHUB_STEP_SUMMARY
