@@ -84,11 +84,11 @@ jobs:
             TOP_VULNS=$(jq -r '.matches[] | select(.vulnerability.severity == "Critical" or .vulnerability.severity == "High") | "- **\(.vulnerability.id)** (\(.vulnerability.severity)): \(.vulnerability.description // "No description")"' frontend-scan.json 2>/dev/null | head -10 | jq -R -s -c 'split("\n")[:-1]' || echo '[]')
             echo "top_vulns=$TOP_VULNS" >> $GITHUB_OUTPUT
             jq -r '.matches[] | select(.vulnerability.severity == "Critical" or .vulnerability.severity == "High") | "- **\(.vulnerability.id)** (\(.vulnerability.severity)): \(.vulnerability.description // "No description")"' frontend-scan.json 2>/dev/null | head -10 >> $GITHUB_STEP_SUMMARY || echo "Could not parse vulnerabilities" >> $GITHUB_STEP_SUMMARY
+          fi
           else
             echo "found=false" >> $GITHUB_OUTPUT
             echo "❌ Frontend scan file not found" >> $GITHUB_STEP_SUMMARY
           fi
-          echo "" >> $GITHUB_STEP_SUMMARY
 
       - name: Display Backend Scan Results
         id: backend-results
@@ -127,6 +127,7 @@ jobs:
             TOP_VULNS=$(jq -r '.matches[] | select(.vulnerability.severity == "Critical" or .vulnerability.severity == "High") | "- **\(.vulnerability.id)** (\(.vulnerability.severity)): \(.vulnerability.description // "No description")"' backend-scan.json 2>/dev/null | head -10 | jq -R -s -c 'split("\n")[:-1]' || echo '[]')
             echo "top_vulns=$TOP_VULNS" >> $GITHUB_OUTPUT
             jq -r '.matches[] | select(.vulnerability.severity == "Critical" or .vulnerability.severity == "High") | "- **\(.vulnerability.id)** (\(.vulnerability.severity)): \(.vulnerability.description // "No description")"' backend-scan.json 2>/dev/null | head -10 >> $GITHUB_STEP_SUMMARY || echo "Could not parse vulnerabilities" >> $GITHUB_STEP_SUMMARY
+          fi
           else
             echo "found=false" >> $GITHUB_OUTPUT
             echo "❌ Backend scan file not found" >> $GITHUB_STEP_SUMMARY
