@@ -48,6 +48,7 @@ jobs:
           output-file: backend-scan.json
 
       - name: Display Frontend Scan Results
+        id: frontend-results
         run: |
           echo "## 🔍 Frontend Security Scan Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -79,6 +80,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
 
       - name: Display Backend Scan Results
+        id: backend-results
         run: |
           echo "## 🔍 Backend Security Scan Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
