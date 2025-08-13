@@ -16,11 +16,6 @@ env:
   USERNAME: ${{ vars.DOCKERHUB_USERNAME }}
   PASSWORD: ${{ secrets.DOCKERHUB_TOKEN }}
 
-permissions:
-  security-events: write
-  actions: read
-  contents: read
-
 jobs:
   grype:
     runs-on: ubuntu-latest
