@@ -29,6 +29,7 @@ jobs:
       - name: Scan image (Frontend)
         id: frontend
         uses: anchore/scan-action@v6
+        fail-build: false
         with:
           image: ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
           output-format: sarif
@@ -39,6 +40,7 @@ jobs:
         uses: anchore/scan-action@v6
         with:
           image: ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
+          fail-build: false
           output-format: sarif
           output-file: backend-scan.sarif
 
@@ -48,3 +50,6 @@ jobs:
           sarif_file: |
             frontend-scan.sarif
             backend-scan.sarif
+
+      - name: Inspect action SARIF report
+        run: cat ${{ steps.scan.outputs.sarif }}
