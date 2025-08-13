@@ -1,0 +1,52 @@
+name: Merge SBOM workflow
+on:
+  workflow_call:
+    inputs:
+      BASE_IMAGE:
+        required: true
+        type: string
+      CUSTOM_IMAGE:
+        required: true
+        type: string
+env:
+  BASE_SBOM_FILE: base.spdx.json
+  CUSTOM_SBOM_FILE: custom.spdx.json
+jobs:
+  sbom:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3.9.2
+        with:
+          cosign-release: 'v2.5.3'
+      - name: Check Cosign install
+        run: cosign version
+      - name: Get Base SBOM
+        run: |
+          cosign download attestation ${{ inputs.BASE_IMAGE }} \
+          | jq -r '.payload' | base64 -d | jq .predicate > ${{ env.BASE_SBOM_FILE }}
+      - name: Install SBOM action
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ inputs.CUSTOM_IMAGE }}
+          output: ${{ env.CUSTOM_SBOM_FILE }}
+      - name: Merge SBOMs
+        # Script courtesy of: https://edgebit.io/blog/merge-two-sboms/
+        run: |
+          jq -s 'def deepmerge(a;b):
+            reduce b[] as $item (a;
+              reduce ($item | keys_unsorted[]) as $key (.;
+                $item[$key] as $val | ($val | type) as $type | .[$key] = if ($type == "object") then
+                  deepmerge({}; [if .[$key] == null then {} else .[$key] end, $val])
+                elif ($type == "array") then
+                  (.[$key] + $val | unique)
+                else
+                  $val
+                end)
+              );
+            deepmerge({}; .)' base.spdx.json custom.spdx.json > merged.spdx.json
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v3
+        with:
+          name: sbom.spdx.json
+
