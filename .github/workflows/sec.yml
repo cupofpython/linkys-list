@@ -19,7 +19,14 @@ env:
 jobs:
   grype:
     runs-on: ubuntu-latest
+    permissions:
+      security-events: write  # Required for uploading SARIF files
+      actions: read           # Required for reading action metadata
+      contents: read          # Required for checkout
     steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+        
       - name: Log in to Docker Hub
         uses: docker/login-action@v3.4.0
         with:
