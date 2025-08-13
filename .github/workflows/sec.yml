@@ -17,7 +17,7 @@ env:
   PASSWORD: ${{ secrets.DOCKERHUB_TOKEN }}
 
 jobs:
-  scout:
+  grype:
     runs-on: ubuntu-latest
     steps:
       - name: Log in to Docker Hub
@@ -27,13 +27,13 @@ jobs:
           password: ${{ env.PASSWORD }}
       
       - name: Scan image (Frontend)
-        id: grype
+        id: frontend
         uses: anchore/scan-action@v6
         with:
           image: ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
 
       - name: Scan image (Backend)
-        id: grype
+        id: backend-grype
         uses: anchore/scan-action@v6
         with:
           image: ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
