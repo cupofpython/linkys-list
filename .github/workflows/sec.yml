@@ -77,14 +77,16 @@ jobs:
             echo "" >> $GITHUB_STEP_SUMMARY
             
             # Show top 10 critical/high vulnerabilities and capture for output
-           if [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 0 ]; then
-            echo "### Top Critical/High Vulnerabilities:" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            # Create a properly escaped JSON array instead of pipe-separated string
-            TOP_VULNS=$(jq -r '.matches[] | select(.vulnerability.severity == "Critical" or .vulnerability.severity == "High") | "- **\(.vulnerability.id)** (\(.vulnerability.severity)): \(.vulnerability.description // "No description")"' frontend-scan.json 2>/dev/null | head -10 | jq -R -s -c 'split("\n")[:-1]' || echo '[]')
-            echo "top_vulns=$TOP_VULNS" >> $GITHUB_OUTPUT
-            jq -r '.matches[] | select(.vulnerability.severity == "Critical" or .vulnerability.severity == "High") | "- **\(.vulnerability.id)** (\(.vulnerability.severity)): \(.vulnerability.description // "No description")"' frontend-scan.json 2>/dev/null | head -10 >> $GITHUB_STEP_SUMMARY || echo "Could not parse vulnerabilities" >> $GITHUB_STEP_SUMMARY
-          fi
+            if [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 0 ]; then
+              echo "### Top Critical/High Vulnerabilities:" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              # Just count how many we have - don't pass the content
+              VULN_COUNT=$(jq '[.matches[] | select(.vulnerability.severity == "Critical" or .vulnerability.severity == "High")] | length' frontend-scan.json 2>/dev/null || echo "0")
+              echo "vuln_count=$VULN_COUNT" >> $GITHUB_OUTPUT
+              jq -r '.matches[] | select(.vulnerability.severity == "Critical" or .vulnerability.severity == "High") | "- **\(.vulnerability.id)** (\(.vulnerability.severity)): \(.vulnerability.description // "No description")"' frontend-scan.json 2>/dev/null | head -10 >> $GITHUB_STEP_SUMMARY || echo "Could not parse vulnerabilities" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "vuln_count=0" >> $GITHUB_OUTPUT
+            fi
           else
             echo "found=false" >> $GITHUB_OUTPUT
             echo "❌ Frontend scan file not found" >> $GITHUB_STEP_SUMMARY
@@ -120,14 +122,16 @@ jobs:
             echo "" >> $GITHUB_STEP_SUMMARY
             
             # Show top 10 critical/high vulnerabilities and capture for output
-          if [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 0 ]; then
-            echo "### Top Critical/High Vulnerabilities:" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            # Create a properly escaped JSON array instead of pipe-separated string
-            TOP_VULNS=$(jq -r '.matches[] | select(.vulnerability.severity == "Critical" or .vulnerability.severity == "High") | "- **\(.vulnerability.id)** (\(.vulnerability.severity)): \(.vulnerability.description // "No description")"' backend-scan.json 2>/dev/null | head -10 | jq -R -s -c 'split("\n")[:-1]' || echo '[]')
-            echo "top_vulns=$TOP_VULNS" >> $GITHUB_OUTPUT
-            jq -r '.matches[] | select(.vulnerability.severity == "Critical" or .vulnerability.severity == "High") | "- **\(.vulnerability.id)** (\(.vulnerability.severity)): \(.vulnerability.description // "No description")"' backend-scan.json 2>/dev/null | head -10 >> $GITHUB_STEP_SUMMARY || echo "Could not parse vulnerabilities" >> $GITHUB_STEP_SUMMARY
-          fi
+            if [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 0 ]; then
+              echo "### Top Critical/High Vulnerabilities:" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              # Just count how many we have - don't pass the content
+              VULN_COUNT=$(jq '[.matches[] | select(.vulnerability.severity == "Critical" or .vulnerability.severity == "High")] | length' backend-scan.json 2>/dev/null || echo "0")
+              echo "vuln_count=$VULN_COUNT" >> $GITHUB_OUTPUT
+              jq -r '.matches[] | select(.vulnerability.severity == "Critical" or .vulnerability.severity == "High") | "- **\(.vulnerability.id)** (\(.vulnerability.severity)): \(.vulnerability.description // "No description")"' backend-scan.json 2>/dev/null | head -10 >> $GITHUB_STEP_SUMMARY || echo "Could not parse vulnerabilities" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "vuln_count=0" >> $GITHUB_OUTPUT
+            fi
           else
             echo "found=false" >> $GITHUB_OUTPUT
             echo "❌ Backend scan file not found" >> $GITHUB_STEP_SUMMARY
@@ -149,7 +153,7 @@ jobs:
               const fHigh = '${{ steps.frontend-results.outputs.high }}' || '0';
               const fMedium = '${{ steps.frontend-results.outputs.medium }}' || '0';
               const fLow = '${{ steps.frontend-results.outputs.low }}' || '0';
-              const fVulnsRaw = '${{ steps.frontend-results.outputs.top_vulns }}' || '[]';
+              const fVulnCount = '${{ steps.frontend-results.outputs.vuln_count }}' || '0';
               
               comment += '### 🖥️ Frontend Image\n';
               comment += '| Severity | Count |\n';
@@ -159,17 +163,8 @@ jobs:
               comment += '| 🟡 Medium | ' + fMedium + ' |\n';
               comment += '| 🟢 Low | ' + fLow + ' |\n\n';
               
-              try {
-                const fVulns = JSON.parse(fVulnsRaw);
-                if (fVulns && fVulns.length > 0) {
-                  comment += '**Top Critical/High Vulnerabilities:**\n';
-                  fVulns.forEach(vuln => {
-                    if (vuln.trim()) comment += vuln + '\n';
-                  });
-                  comment += '\n';
-                }
-              } catch (e) {
-                console.log('Error parsing frontend vulnerabilities:', e);
+              if (parseInt(fVulnCount) > 0) {
+                comment += '**' + fVulnCount + ' Critical/High vulnerabilities found.** See workflow summary for details.\n\n';
               }
             } else {
               comment += '### 🖥️ Frontend Image\n';
@@ -181,7 +176,7 @@ jobs:
               const bHigh = '${{ steps.backend-results.outputs.high }}' || '0';
               const bMedium = '${{ steps.backend-results.outputs.medium }}' || '0';
               const bLow = '${{ steps.backend-results.outputs.low }}' || '0';
-              const bVulnsRaw = '${{ steps.backend-results.outputs.top_vulns }}' || '[]';
+              const bVulnCount = '${{ steps.backend-results.outputs.vuln_count }}' || '0';
               
               comment += '### 🗄️ Backend Image\n';
               comment += '| Severity | Count |\n';
@@ -191,17 +186,8 @@ jobs:
               comment += '| 🟡 Medium | ' + bMedium + ' |\n';
               comment += '| 🟢 Low | ' + bLow + ' |\n\n';
               
-              try {
-                const bVulns = JSON.parse(bVulnsRaw);
-                if (bVulns && bVulns.length > 0) {
-                  comment += '**Top Critical/High Vulnerabilities:**\n';
-                  bVulns.forEach(vuln => {
-                    if (vuln.trim()) comment += vuln + '\n';
-                  });
-                  comment += '\n';
-                }
-              } catch (e) {
-                console.log('Error parsing backend vulnerabilities:', e);
+              if (parseInt(bVulnCount) > 0) {
+                comment += '**' + bVulnCount + ' Critical/High vulnerabilities found.** See workflow summary for details.\n\n';
               }
             } else {
               comment += '### 🗄️ Backend Image\n';
