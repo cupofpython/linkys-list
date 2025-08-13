@@ -34,7 +34,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           push: true
-          file: Dockerfile
+          file: frontend/Dockerfile
           context: frontend
           tags: ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
 
@@ -42,7 +42,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           push: true
-          file: Dockerfile
+          file: backend/Dockerfile
           context: backend
           tags: ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
         
