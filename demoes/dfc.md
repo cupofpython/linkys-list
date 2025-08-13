@@ -37,7 +37,28 @@ Finally, we update our `compose.yml` file to use the Chainguard postgres image, 
 Now we can run our application locally to check that we didn't break anything by running `docker compose up --build`, or if using the pre-made files, run `docker compose -f compose-cg.yml up --build` for the Chainguard version.
 
 ## Bonus Jonas
-You can scan the images for vulnerabilities by running `grype cg-e2e-frontend` and `grype cg-e2e-backend`.
+You can scan the images for vulnerabilities by running the following commands:
+
+### Scan Frontend with Docker Hub Base Image
+
+Run: `grype cg-e2e-frontend`
+
+Output:
+![Frontend Docker Hub base](img/frontend-dockerhub-grype.png)
+
+### Scan Backend with Docker Hub Base Image
+
+Run: `grype cg-e2e-backend`
+
+Output:
+![Backend Docker Hub base](img/backend-dockerhub-grype.png)
+
+### Scan Frontend and Backend with Chainguard Base Image
+
+Run: `grype cg-e2e-backend-cg` and `grype cg-e2e-frontend-cg`
+
+Output:
+![Chainguard base](img/cg-grype.png)
 
 ## Troubleshooting
 Make sure you authenticate via chainctl: `chainctl auth configure-docker`
