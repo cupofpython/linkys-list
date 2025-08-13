@@ -4,12 +4,12 @@ on:
   pull_request
 
 jobs:
-  #build-and-push-image:
-  #  uses: ./.github/workflows/build-and-push.yml
-  #  with:
-  #    IMAGE_TAG: pr-${{ github.event.number }}
-  #  secrets:
-  #    DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+  build-and-push-image:
+    uses: ./.github/workflows/build-and-push.yml
+    with:
+      IMAGE_TAG: pr-${{ github.event.number }}
+    secrets:
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   sec:
     #needs: build-and-push-image
