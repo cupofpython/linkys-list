@@ -1,4 +1,4 @@
-FROM cgr.dev/chainguard-private/nginx:1.29.0@sha256:1db624b84808951bfdcedc5a33432a1bef12868a3759739c32c92bbec7124341
+FROM cgr.dev/samcorp/nginx:1.29@sha256:6bb6d39d7e5e50d9b824ff54a9d43db239d59f2ffe90ee6ce8f41d8c7777de7c
 
 COPY . /usr/share/nginx/html/
 
