@@ -30,6 +30,7 @@ jobs:
         with:
           dockerfile: backend/Dockerfile.converted
   build-and-push-image:
+    needs: integrity-check
     runs-on: ubuntu-latest
     steps:
       - name: Check out repo
