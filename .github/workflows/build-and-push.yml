@@ -21,6 +21,8 @@ jobs:
   integrity-check:
     runs-on: ubuntu-latest
     steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
       - name: Verify base image for frontend (Chainguard)
         uses: cupofpython/integrity-check@v1
         with:
