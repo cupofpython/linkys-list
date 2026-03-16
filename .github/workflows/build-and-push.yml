@@ -23,6 +23,10 @@ jobs:
     steps:
       - name: Check out repo
         uses: actions/checkout@v4
+      - name: Setup chainctl
+        uses: chainguard-dev/setup-chainctl@v0.5.0
+        with:
+          identity: ${{ secrets.CHAINGUARD_IDENTITY }}
       - name: Verify base image for frontend (Chainguard)
         uses: cupofpython/integrity-check@v1
         with:
