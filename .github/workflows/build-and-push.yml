@@ -34,11 +34,11 @@ jobs:
         with:
           identity: ${{ secrets.CHAINCTL_IDENTITY }}
       - name: Verify base image for frontend (Chainguard)
-        uses: cupofpython/integrity-check@v1.1.0
+        uses: cupofpython/integrity-check@v1.1.1
         with:
           dockerfile: frontend/Dockerfile.converted
       - name: Verify base image for backend (Chainguard)
-        uses: cupofpython/integrity-check@v1.1.0
+        uses: cupofpython/integrity-check@v1.1.1
         with:
           dockerfile: backend/Dockerfile.converted
   build-and-push-image:
