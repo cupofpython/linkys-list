@@ -31,6 +31,8 @@ jobs:
         uses: chainguard-dev/setup-chainctl@v0.5.0
         with:
           identity: ${{ secrets.CHAINGUARD_IDENTITY }}
+      - name: Configure Docker auth for cgr.dev
+        run: chainctl auth configure-docker
       - name: Verify base image for frontend (Chainguard)
         uses: cupofpython/integrity-check@v1
         with:
