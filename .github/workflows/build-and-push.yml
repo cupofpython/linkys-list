@@ -10,6 +10,10 @@ on:
         required: true
         type: string
 
+permissions:
+  contents: read
+  id-token: write
+
 env:
   REGISTRY: sammorriscg
   FRONTEND_IMAGE_NAME: cg-e2e-frontend
