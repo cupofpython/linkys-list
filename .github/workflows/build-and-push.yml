@@ -5,6 +5,8 @@ on:
     secrets:
       DOCKERHUB_TOKEN:
         required: true
+      CHAINCTL_IDENTITY:
+        required: true
     inputs:
       IMAGE_TAG:
         required: true
