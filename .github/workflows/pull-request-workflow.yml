@@ -4,13 +4,6 @@ on:
   pull_request
 
 jobs:
-  build-and-push-image:
-    uses: ./.github/workflows/build-and-push.yml
-    with:
-      IMAGE_TAG: pr-${{ github.event.number }}
-    secrets:
-      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-      CHAINCTL_IDENTITY: ${{ secrets.CHAINCTL_IDENTITY }}
 
   sec:
     needs: build-and-push-image

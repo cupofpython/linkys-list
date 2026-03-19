@@ -69,19 +69,27 @@ jobs:
 
       - name: Display Frontend Scan Results (DH)
         id: frontend-results
-        run: .github/workflows/sec-results.sh frontend-scan.json
+        run: |
+          chmod +x .github/workflows/sec-results.sh
+          .github/workflows/sec-results.sh frontend-scan.json
 
       - name: Display Frontend Scan Results (CG)
         id: cg-frontend-results
-        run: .github/workflows/sec-results.sh cg-frontend-scan.json
+        run: |
+          chmod +x .github/workflows/sec-results.sh
+          .github/workflows/sec-results.sh cg-frontend-scan.json
 
       - name: Display Backend Scan Results (DH)
         id: backend-results
-        run: .github/workflows/sec-results.sh backend-scan.json
+        run: |
+          chmod +x .github/workflows/sec-results.sh
+          .github/workflows/sec-results.sh backend-scan.json
 
       - name: Display Backend Scan Results (CG)
         id: cg-backend-results
-        run: .github/workflows/sec-results.sh cg-backend-scan.json
+        run: |
+          chmod +x .github/workflows/sec-results.sh
+          .github/workflows/sec-results.sh cg-backend-scan.json
 
       - name: Comment on PR (DH)
         if: github.event_name == 'pull_request' || github.event_name == 'pull_request_target'
