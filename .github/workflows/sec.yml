@@ -10,9 +10,12 @@ on:
         type: string
 
 env:
-  REGISTRY: ghcr.io/cupofpython
-  FRONTEND_IMAGE_NAME: cg-e2e-frontend
-  BACKEND_IMAGE_NAME: cg-e2e-backend
+  REGISTRY: ghcr.io
+  NAMESPACE: cupofpython
+  CG_FRONTEND_IMAGE_NAME: cg-e2e-frontend
+  CG_BACKEND_IMAGE_NAME: cg-e2e-backend
+  FRONTEND_IMAGE_NAME: e2e-frontend
+  BACKEND_IMAGE_NAME: e2e-backend
 
 jobs:
   grype:
@@ -28,113 +31,31 @@ jobs:
           username: ${{github.actor}}
           password: ${{secrets.GITHUB_TOKEN}}
       
-      - name: Scan image (Frontend)
+      - name: Scan frontend image (DH)
         id: frontend
         uses: anchore/scan-action@v6
         with:
-          image: ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
+          image: ${{ env.REGISTRY }}/${{ env.NAMESPACE }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
           fail-build: false
           output-format: json
           output-file: frontend-scan.json
 
-      - name: Scan image (Backend)
-        id: backend-grype
+      - name: Scan backend image (DH)
+        id: backend
         uses: anchore/scan-action@v6
         with:
-          image: ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
+          image: ${{ env.REGISTRY }}/${{ env.NAMESPACE }}/${{ env.BACKEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
           fail-build: false
           output-format: json
           output-file: backend-scan.json
 
       - name: Display Frontend Scan Results
         id: frontend-results
-        run: |
-          echo "## 🔍 Frontend Security Scan Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          if [ -f "frontend-scan.json" ]; then
-            echo "found=true" >> $GITHUB_OUTPUT
-            
-            # Count vulnerabilities by severity
-            CRITICAL=$(jq '[.matches[] | select(.vulnerability.severity == "Critical")] | length' frontend-scan.json 2>/dev/null || echo "0")
-            HIGH=$(jq '[.matches[] | select(.vulnerability.severity == "High")] | length' frontend-scan.json 2>/dev/null || echo "0")
-            MEDIUM=$(jq '[.matches[] | select(.vulnerability.severity == "Medium")] | length' frontend-scan.json 2>/dev/null || echo "0")
-            LOW=$(jq '[.matches[] | select(.vulnerability.severity == "Low")] | length' frontend-scan.json 2>/dev/null || echo "0")
-            
-            # Set outputs
-            echo "critical=$CRITICAL" >> $GITHUB_OUTPUT
-            echo "high=$HIGH" >> $GITHUB_OUTPUT
-            echo "medium=$MEDIUM" >> $GITHUB_OUTPUT
-            echo "low=$LOW" >> $GITHUB_OUTPUT
-            
-            echo "| Severity | Count |" >> $GITHUB_STEP_SUMMARY
-            echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
-            echo "| 🔴 Critical | $CRITICAL |" >> $GITHUB_STEP_SUMMARY
-            echo "| 🟠 High | $HIGH |" >> $GITHUB_STEP_SUMMARY
-            echo "| 🟡 Medium | $MEDIUM |" >> $GITHUB_STEP_SUMMARY
-            echo "| 🟢 Low | $LOW |" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            
-            # Show top 10 critical/high vulnerabilities and capture for output
-            if [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 0 ]; then
-              echo "### Top Critical/High Vulnerabilities:" >> $GITHUB_STEP_SUMMARY
-              echo "" >> $GITHUB_STEP_SUMMARY
-              # Just count how many we have - don't pass the content
-              VULN_COUNT=$(jq '[.matches[] | select(.vulnerability.severity == "Critical" or .vulnerability.severity == "High")] | length' frontend-scan.json 2>/dev/null || echo "0")
-              echo "vuln_count=$VULN_COUNT" >> $GITHUB_OUTPUT
-              jq -r '.matches[] | select(.vulnerability.severity == "Critical" or .vulnerability.severity == "High") | "- **\(.vulnerability.id)** (\(.vulnerability.severity)): \(.vulnerability.description // "No description")"' frontend-scan.json 2>/dev/null | head -10 >> $GITHUB_STEP_SUMMARY || echo "Could not parse vulnerabilities" >> $GITHUB_STEP_SUMMARY
-            else
-              echo "vuln_count=0" >> $GITHUB_OUTPUT
-            fi
-          else
-            echo "found=false" >> $GITHUB_OUTPUT
-            echo "❌ Frontend scan file not found" >> $GITHUB_STEP_SUMMARY
-          fi
+        run: .github/workflows/sec-results.sh frontend-scan.json
 
       - name: Display Backend Scan Results
         id: backend-results
-        run: |
-          echo "## 🔍 Backend Security Scan Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          if [ -f "backend-scan.json" ]; then
-            echo "found=true" >> $GITHUB_OUTPUT
-            
-            # Count vulnerabilities by severity
-            CRITICAL=$(jq '[.matches[] | select(.vulnerability.severity == "Critical")] | length' backend-scan.json 2>/dev/null || echo "0")
-            HIGH=$(jq '[.matches[] | select(.vulnerability.severity == "High")] | length' backend-scan.json 2>/dev/null || echo "0")
-            MEDIUM=$(jq '[.matches[] | select(.vulnerability.severity == "Medium")] | length' backend-scan.json 2>/dev/null || echo "0")
-            LOW=$(jq '[.matches[] | select(.vulnerability.severity == "Low")] | length' backend-scan.json 2>/dev/null || echo "0")
-            
-            # Set outputs
-            echo "critical=$CRITICAL" >> $GITHUB_OUTPUT
-            echo "high=$HIGH" >> $GITHUB_OUTPUT
-            echo "medium=$MEDIUM" >> $GITHUB_OUTPUT
-            echo "low=$LOW" >> $GITHUB_OUTPUT
-            
-            echo "| Severity | Count |" >> $GITHUB_STEP_SUMMARY
-            echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
-            echo "| 🔴 Critical | $CRITICAL |" >> $GITHUB_STEP_SUMMARY
-            echo "| 🟠 High | $HIGH |" >> $GITHUB_STEP_SUMMARY
-            echo "| 🟡 Medium | $MEDIUM |" >> $GITHUB_STEP_SUMMARY
-            echo "| 🟢 Low | $LOW |" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            
-            # Show top 10 critical/high vulnerabilities and capture for output
-            if [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 0 ]; then
-              echo "### Top Critical/High Vulnerabilities:" >> $GITHUB_STEP_SUMMARY
-              echo "" >> $GITHUB_STEP_SUMMARY
-              # Just count how many we have - don't pass the content
-              VULN_COUNT=$(jq '[.matches[] | select(.vulnerability.severity == "Critical" or .vulnerability.severity == "High")] | length' backend-scan.json 2>/dev/null || echo "0")
-              echo "vuln_count=$VULN_COUNT" >> $GITHUB_OUTPUT
-              jq -r '.matches[] | select(.vulnerability.severity == "Critical" or .vulnerability.severity == "High") | "- **\(.vulnerability.id)** (\(.vulnerability.severity)): \(.vulnerability.description // "No description")"' backend-scan.json 2>/dev/null | head -10 >> $GITHUB_STEP_SUMMARY || echo "Could not parse vulnerabilities" >> $GITHUB_STEP_SUMMARY
-            else
-              echo "vuln_count=0" >> $GITHUB_OUTPUT
-            fi
-          else
-            echo "found=false" >> $GITHUB_OUTPUT
-            echo "❌ Backend scan file not found" >> $GITHUB_STEP_SUMMARY
-          fi
+        run: .github/workflows/sec-results.sh backend-scan.json
 
       - name: Comment on PR
         if: github.event_name == 'pull_request' || github.event_name == 'pull_request_target'

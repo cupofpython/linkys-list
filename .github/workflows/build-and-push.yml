@@ -18,8 +18,10 @@ permissions:
 
 env:
   NAMESPACE: cupofpython
-  FRONTEND_IMAGE_NAME: cg-e2e-frontend
-  BACKEND_IMAGE_NAME: cg-e2e-backend
+  CG_FRONTEND_IMAGE_NAME: cg-e2e-frontend
+  CG_BACKEND_IMAGE_NAME: cg-e2e-backend
+  FRONTEND_IMAGE_NAME: e2e-frontend
+  BACKEND_IMAGE_NAME: e2e-backend
 
 jobs:
   integrity-check:
@@ -56,12 +58,22 @@ jobs:
           username: ${{github.actor}}
           password: ${{secrets.GITHUB_TOKEN}}
 
-      - name: Build and push frontend (Chainguard)
+      - name: Build and push frontend (DH)
         run: |
           docker build frontend -t ghcr.io/${{ env.NAMESPACE }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
           docker push ghcr.io/${{ env.NAMESPACE }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
 
-      - name: Build and push backend (Chainguard)
+      - name: Build and push frontend (CG)
+        run: |
+          docker build frontend -f frontend/Dockerfile.converted -t ghcr.io/${{ env.NAMESPACE }}/${{ env.CG_FRONTEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
+          docker push ghcr.io/${{ env.NAMESPACE }}/${{ env.CG_FRONTEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
+
+      - name: Build and push backend (DH)
         run: |
           docker build backend -t ghcr.io/${{ env.NAMESPACE }}/${{ env.BACKEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
           docker push ghcr.io/${{ env.NAMESPACE }}/${{ env.BACKEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
+
+      - name: Build and push backend (CG)
+        run: |
+          docker build backend -f backend/Dockerfile.converted -t ghcr.io/${{ env.NAMESPACE }}/${{ env.CG_BACKEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
+          docker push ghcr.io/${{ env.NAMESPACE }}/${{ env.CG_BACKEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
