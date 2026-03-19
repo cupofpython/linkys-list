@@ -10,11 +10,12 @@ on:
         type: string
 
 env:
-  REGISTRY: sammorriscg
-  FRONTEND_IMAGE_NAME: cg-e2e-frontend
-  BACKEND_IMAGE_NAME: cg-e2e-backend
-  USERNAME: ${{ vars.DOCKERHUB_USERNAME }}
-  PASSWORD: ${{ secrets.DOCKERHUB_TOKEN }}
+  REGISTRY: ghcr.io
+  NAMESPACE: cupofpython
+  CG_FRONTEND_IMAGE_NAME: cg-e2e-frontend
+  CG_BACKEND_IMAGE_NAME: cg-e2e-backend
+  FRONTEND_IMAGE_NAME: e2e-frontend
+  BACKEND_IMAGE_NAME: e2e-backend
 
 jobs:
   grype:
@@ -23,121 +24,74 @@ jobs:
       - name: Check out repo
         uses: actions/checkout@v4
 
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3.4.0
+      - name: 'Login to GitHub Container Registry'
+        uses: docker/login-action@v1
         with:
-          username: ${{ env.USERNAME }}
-          password: ${{ env.PASSWORD }}
+          registry: ghcr.io
+          username: ${{github.actor}}
+          password: ${{secrets.GITHUB_TOKEN}}
       
-      - name: Scan image (Frontend)
+      - name: Scan frontend image (DH)
         id: frontend
         uses: anchore/scan-action@v6
         with:
-          image: ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
+          image: ${{ env.REGISTRY }}/${{ env.NAMESPACE }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
           fail-build: false
           output-format: json
           output-file: frontend-scan.json
 
-      - name: Scan image (Backend)
-        id: backend-grype
+      - name: Scan frontend image (CG)
+        id: cg-frontend
         uses: anchore/scan-action@v6
         with:
-          image: ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
+          image: ${{ env.REGISTRY }}/${{ env.NAMESPACE }}/${{ env.CG_FRONTEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
+          fail-build: false
+          output-format: json
+          output-file: cg-frontend-scan.json
+
+      - name: Scan backend image (DH)
+        id: backend
+        uses: anchore/scan-action@v6
+        with:
+          image: ${{ env.REGISTRY }}/${{ env.NAMESPACE }}/${{ env.BACKEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
           fail-build: false
           output-format: json
           output-file: backend-scan.json
 
-      - name: Display Frontend Scan Results
+      - name: Scan backend image (CG)
+        id: cg-backend
+        uses: anchore/scan-action@v6
+        with:
+          image: ${{ env.REGISTRY }}/${{ env.NAMESPACE }}/${{ env.CG_BACKEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
+          fail-build: false
+          output-format: json
+          output-file: cg-backend-scan.json
+
+      - name: Display Frontend Scan Results (DH)
         id: frontend-results
         run: |
-          echo "## 🔍 Frontend Security Scan Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          if [ -f "frontend-scan.json" ]; then
-            echo "found=true" >> $GITHUB_OUTPUT
-            
-            # Count vulnerabilities by severity
-            CRITICAL=$(jq '[.matches[] | select(.vulnerability.severity == "Critical")] | length' frontend-scan.json 2>/dev/null || echo "0")
-            HIGH=$(jq '[.matches[] | select(.vulnerability.severity == "High")] | length' frontend-scan.json 2>/dev/null || echo "0")
-            MEDIUM=$(jq '[.matches[] | select(.vulnerability.severity == "Medium")] | length' frontend-scan.json 2>/dev/null || echo "0")
-            LOW=$(jq '[.matches[] | select(.vulnerability.severity == "Low")] | length' frontend-scan.json 2>/dev/null || echo "0")
-            
-            # Set outputs
-            echo "critical=$CRITICAL" >> $GITHUB_OUTPUT
-            echo "high=$HIGH" >> $GITHUB_OUTPUT
-            echo "medium=$MEDIUM" >> $GITHUB_OUTPUT
-            echo "low=$LOW" >> $GITHUB_OUTPUT
-            
-            echo "| Severity | Count |" >> $GITHUB_STEP_SUMMARY
-            echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
-            echo "| 🔴 Critical | $CRITICAL |" >> $GITHUB_STEP_SUMMARY
-            echo "| 🟠 High | $HIGH |" >> $GITHUB_STEP_SUMMARY
-            echo "| 🟡 Medium | $MEDIUM |" >> $GITHUB_STEP_SUMMARY
-            echo "| 🟢 Low | $LOW |" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            
-            # Show top 10 critical/high vulnerabilities and capture for output
-            if [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 0 ]; then
-              echo "### Top Critical/High Vulnerabilities:" >> $GITHUB_STEP_SUMMARY
-              echo "" >> $GITHUB_STEP_SUMMARY
-              # Just count how many we have - don't pass the content
-              VULN_COUNT=$(jq '[.matches[] | select(.vulnerability.severity == "Critical" or .vulnerability.severity == "High")] | length' frontend-scan.json 2>/dev/null || echo "0")
-              echo "vuln_count=$VULN_COUNT" >> $GITHUB_OUTPUT
-              jq -r '.matches[] | select(.vulnerability.severity == "Critical" or .vulnerability.severity == "High") | "- **\(.vulnerability.id)** (\(.vulnerability.severity)): \(.vulnerability.description // "No description")"' frontend-scan.json 2>/dev/null | head -10 >> $GITHUB_STEP_SUMMARY || echo "Could not parse vulnerabilities" >> $GITHUB_STEP_SUMMARY
-            else
-              echo "vuln_count=0" >> $GITHUB_OUTPUT
-            fi
-          else
-            echo "found=false" >> $GITHUB_OUTPUT
-            echo "❌ Frontend scan file not found" >> $GITHUB_STEP_SUMMARY
-          fi
+          chmod +x .github/workflows/sec-results.sh
+          .github/workflows/sec-results.sh frontend-scan.json
 
-      - name: Display Backend Scan Results
+      - name: Display Frontend Scan Results (CG)
+        id: cg-frontend-results
+        run: |
+          chmod +x .github/workflows/sec-results.sh
+          .github/workflows/sec-results.sh cg-frontend-scan.json
+
+      - name: Display Backend Scan Results (DH)
         id: backend-results
         run: |
-          echo "## 🔍 Backend Security Scan Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          if [ -f "backend-scan.json" ]; then
-            echo "found=true" >> $GITHUB_OUTPUT
-            
-            # Count vulnerabilities by severity
-            CRITICAL=$(jq '[.matches[] | select(.vulnerability.severity == "Critical")] | length' backend-scan.json 2>/dev/null || echo "0")
-            HIGH=$(jq '[.matches[] | select(.vulnerability.severity == "High")] | length' backend-scan.json 2>/dev/null || echo "0")
-            MEDIUM=$(jq '[.matches[] | select(.vulnerability.severity == "Medium")] | length' backend-scan.json 2>/dev/null || echo "0")
-            LOW=$(jq '[.matches[] | select(.vulnerability.severity == "Low")] | length' backend-scan.json 2>/dev/null || echo "0")
-            
-            # Set outputs
-            echo "critical=$CRITICAL" >> $GITHUB_OUTPUT
-            echo "high=$HIGH" >> $GITHUB_OUTPUT
-            echo "medium=$MEDIUM" >> $GITHUB_OUTPUT
-            echo "low=$LOW" >> $GITHUB_OUTPUT
-            
-            echo "| Severity | Count |" >> $GITHUB_STEP_SUMMARY
-            echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
-            echo "| 🔴 Critical | $CRITICAL |" >> $GITHUB_STEP_SUMMARY
-            echo "| 🟠 High | $HIGH |" >> $GITHUB_STEP_SUMMARY
-            echo "| 🟡 Medium | $MEDIUM |" >> $GITHUB_STEP_SUMMARY
-            echo "| 🟢 Low | $LOW |" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            
-            # Show top 10 critical/high vulnerabilities and capture for output
-            if [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 0 ]; then
-              echo "### Top Critical/High Vulnerabilities:" >> $GITHUB_STEP_SUMMARY
-              echo "" >> $GITHUB_STEP_SUMMARY
-              # Just count how many we have - don't pass the content
-              VULN_COUNT=$(jq '[.matches[] | select(.vulnerability.severity == "Critical" or .vulnerability.severity == "High")] | length' backend-scan.json 2>/dev/null || echo "0")
-              echo "vuln_count=$VULN_COUNT" >> $GITHUB_OUTPUT
-              jq -r '.matches[] | select(.vulnerability.severity == "Critical" or .vulnerability.severity == "High") | "- **\(.vulnerability.id)** (\(.vulnerability.severity)): \(.vulnerability.description // "No description")"' backend-scan.json 2>/dev/null | head -10 >> $GITHUB_STEP_SUMMARY || echo "Could not parse vulnerabilities" >> $GITHUB_STEP_SUMMARY
-            else
-              echo "vuln_count=0" >> $GITHUB_OUTPUT
-            fi
-          else
-            echo "found=false" >> $GITHUB_OUTPUT
-            echo "❌ Backend scan file not found" >> $GITHUB_STEP_SUMMARY
-          fi
+          chmod +x .github/workflows/sec-results.sh
+          .github/workflows/sec-results.sh backend-scan.json
 
-      - name: Comment on PR
+      - name: Display Backend Scan Results (CG)
+        id: cg-backend-results
+        run: |
+          chmod +x .github/workflows/sec-results.sh
+          .github/workflows/sec-results.sh cg-backend-scan.json
+
+      - name: Comment on PR (DH)
         if: github.event_name == 'pull_request' || github.event_name == 'pull_request_target'
         uses: actions/github-script@v7
         with:
@@ -145,7 +99,7 @@ jobs:
             const frontendFound = '${{ steps.frontend-results.outputs.found }}' === 'true';
             const backendFound = '${{ steps.backend-results.outputs.found }}' === 'true';
             
-            let comment = '## 🛡️ Security Scan Results\n\n';
+            let comment = '## 🛡️ Security Scan Results (Docker Hub)\n\n';
             comment += 'Image Tag: `${{ inputs.IMAGE_TAG }}`\n\n';
             
             if (frontendFound) {
@@ -162,7 +116,6 @@ jobs:
               comment += '| 🟠 High | ' + fHigh + ' |\n';
               comment += '| 🟡 Medium | ' + fMedium + ' |\n';
               comment += '| 🟢 Low | ' + fLow + ' |\n\n';
-              
               if (parseInt(fVulnCount) > 0) {
                 comment += '**' + fVulnCount + ' Critical/High vulnerabilities found.** See workflow summary for details.\n\n';
               }
@@ -185,7 +138,6 @@ jobs:
               comment += '| 🟠 High | ' + bHigh + ' |\n';
               comment += '| 🟡 Medium | ' + bMedium + ' |\n';
               comment += '| 🟢 Low | ' + bLow + ' |\n\n';
-              
               if (parseInt(bVulnCount) > 0) {
                 comment += '**' + bVulnCount + ' Critical/High vulnerabilities found.** See workflow summary for details.\n\n';
               }
@@ -198,20 +150,19 @@ jobs:
             comment += '📊 *Full scan reports available in workflow artifacts*\n';
             comment += '🔗 [View workflow run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})';
             
-            // Find existing security comment to update or create new one
             const comments = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number
             });
             
+            // ← unique marker for DH comment
             const existingComment = comments.data.find(c => 
-              c.body.includes('🛡️ Security Scan Results') && 
+              c.body.includes('🛡️ Security Scan Results (Docker Hub)') && 
               c.user.type === 'Bot'
             );
             
             if (existingComment) {
-              // Update existing comment
               await github.rest.issues.updateComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -219,7 +170,93 @@ jobs:
                 body: comment
               });
             } else {
-              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: comment
+              });
+            }
+
+      - name: Comment on PR (CG)
+        if: github.event_name == 'pull_request' || github.event_name == 'pull_request_target'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const frontendFound = '${{ steps.cg-frontend-results.outputs.found }}' === 'true';
+            const backendFound = '${{ steps.cg-backend-results.outputs.found }}' === 'true';
+            
+            let comment = '## 🛡️ Security Scan Results (Chainguard)\n\n';
+            comment += 'Image Tag: `${{ inputs.IMAGE_TAG }}`\n\n';
+            
+            if (frontendFound) {
+              const fCritical = '${{ steps.cg-frontend-results.outputs.critical }}' || '0';
+              const fHigh = '${{ steps.cg-frontend-results.outputs.high }}' || '0';
+              const fMedium = '${{ steps.cg-frontend-results.outputs.medium }}' || '0';
+              const fLow = '${{ steps.cg-frontend-results.outputs.low }}' || '0';
+              const fVulnCount = '${{ steps.cg-frontend-results.outputs.vuln_count }}' || '0';
+              
+              comment += '### 🖥️ Frontend Image\n';
+              comment += '| Severity | Count |\n';
+              comment += '|----------|-------|\n';
+              comment += '| 🔴 Critical | ' + fCritical + ' |\n';
+              comment += '| 🟠 High | ' + fHigh + ' |\n';
+              comment += '| 🟡 Medium | ' + fMedium + ' |\n';
+              comment += '| 🟢 Low | ' + fLow + ' |\n\n';
+              if (parseInt(fVulnCount) > 0) {
+                comment += '**' + fVulnCount + ' Critical/High vulnerabilities found.** See workflow summary for details.\n\n';
+              }
+            } else {
+              comment += '### 🖥️ Frontend Image\n';
+              comment += '❌ Scan file not found or scan failed\n\n';
+            }
+            
+            if (backendFound) {
+              const bCritical = '${{ steps.cg-backend-results.outputs.critical }}' || '0';
+              const bHigh = '${{ steps.cg-backend-results.outputs.high }}' || '0';
+              const bMedium = '${{ steps.cg-backend-results.outputs.medium }}' || '0';
+              const bLow = '${{ steps.cg-backend-results.outputs.low }}' || '0';
+              const bVulnCount = '${{ steps.cg-backend-results.outputs.vuln_count }}' || '0';
+              
+              comment += '### 🗄️ Backend Image\n';
+              comment += '| Severity | Count |\n';
+              comment += '|----------|-------|\n';
+              comment += '| 🔴 Critical | ' + bCritical + ' |\n';
+              comment += '| 🟠 High | ' + bHigh + ' |\n';
+              comment += '| 🟡 Medium | ' + bMedium + ' |\n';
+              comment += '| 🟢 Low | ' + bLow + ' |\n\n';
+              if (parseInt(bVulnCount) > 0) {
+                comment += '**' + bVulnCount + ' Critical/High vulnerabilities found.** See workflow summary for details.\n\n';
+              }
+            } else {
+              comment += '### 🗄️ Backend Image\n';
+              comment += '❌ Scan file not found or scan failed\n\n';
+            }
+            
+            comment += '---\n';
+            comment += '📊 *Full scan reports available in workflow artifacts*\n';
+            comment += '🔗 [View workflow run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})';
+            
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number
+            });
+            
+            // ← unique marker for CG comment
+            const existingComment = comments.data.find(c => 
+              c.body.includes('🛡️ Security Scan Results (Chainguard)') && 
+              c.user.type === 'Bot'
+            );
+            
+            if (existingComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existingComment.id,
+                body: comment
+              });
+            } else {
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -234,4 +271,6 @@ jobs:
           name: security-scan-reports-${{ inputs.IMAGE_TAG }}
           path: |
             frontend-scan.json
+            cg-frontend-scan.json
             backend-scan.json
+            cg-backend-scan.json
