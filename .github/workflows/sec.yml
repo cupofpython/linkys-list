@@ -99,7 +99,7 @@ jobs:
             const frontendFound = '${{ steps.frontend-results.outputs.found }}' === 'true';
             const backendFound = '${{ steps.backend-results.outputs.found }}' === 'true';
             
-            let comment = '## 🛡️ Security Scan Results\n\n';
+            let comment = '## 🛡️ Security Scan Results (Docker Hub)\n\n';
             comment += 'Image Tag: `${{ inputs.IMAGE_TAG }}`\n\n';
             
             if (frontendFound) {
@@ -116,7 +116,6 @@ jobs:
               comment += '| 🟠 High | ' + fHigh + ' |\n';
               comment += '| 🟡 Medium | ' + fMedium + ' |\n';
               comment += '| 🟢 Low | ' + fLow + ' |\n\n';
-              
               if (parseInt(fVulnCount) > 0) {
                 comment += '**' + fVulnCount + ' Critical/High vulnerabilities found.** See workflow summary for details.\n\n';
               }
@@ -139,7 +138,6 @@ jobs:
               comment += '| 🟠 High | ' + bHigh + ' |\n';
               comment += '| 🟡 Medium | ' + bMedium + ' |\n';
               comment += '| 🟢 Low | ' + bLow + ' |\n\n';
-              
               if (parseInt(bVulnCount) > 0) {
                 comment += '**' + bVulnCount + ' Critical/High vulnerabilities found.** See workflow summary for details.\n\n';
               }
@@ -152,20 +150,19 @@ jobs:
             comment += '📊 *Full scan reports available in workflow artifacts*\n';
             comment += '🔗 [View workflow run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})';
             
-            // Find existing security comment to update or create new one
             const comments = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number
             });
             
+            // ← unique marker for DH comment
             const existingComment = comments.data.find(c => 
-              c.body.includes('🛡️ Security Scan Results') && 
+              c.body.includes('🛡️ Security Scan Results (Docker Hub)') && 
               c.user.type === 'Bot'
             );
             
             if (existingComment) {
-              // Update existing comment
               await github.rest.issues.updateComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -173,7 +170,6 @@ jobs:
                 body: comment
               });
             } else {
-              // Create new comment
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -188,9 +184,9 @@ jobs:
         with:
           script: |
             const frontendFound = '${{ steps.cg-frontend-results.outputs.found }}' === 'true';
-            const backendFound = '${{ steps.backend-results.outputs.found }}' === 'true';
+            const backendFound = '${{ steps.cg-backend-results.outputs.found }}' === 'true';
             
-            let comment = '## 🛡️ Security Scan Results\n\n';
+            let comment = '## 🛡️ Security Scan Results (Chainguard)\n\n';
             comment += 'Image Tag: `${{ inputs.IMAGE_TAG }}`\n\n';
             
             if (frontendFound) {
@@ -199,7 +195,7 @@ jobs:
               const fMedium = '${{ steps.cg-frontend-results.outputs.medium }}' || '0';
               const fLow = '${{ steps.cg-frontend-results.outputs.low }}' || '0';
               const fVulnCount = '${{ steps.cg-frontend-results.outputs.vuln_count }}' || '0';
-
+              
               comment += '### 🖥️ Frontend Image\n';
               comment += '| Severity | Count |\n';
               comment += '|----------|-------|\n';
@@ -207,7 +203,6 @@ jobs:
               comment += '| 🟠 High | ' + fHigh + ' |\n';
               comment += '| 🟡 Medium | ' + fMedium + ' |\n';
               comment += '| 🟢 Low | ' + fLow + ' |\n\n';
-              
               if (parseInt(fVulnCount) > 0) {
                 comment += '**' + fVulnCount + ' Critical/High vulnerabilities found.** See workflow summary for details.\n\n';
               }
@@ -222,7 +217,7 @@ jobs:
               const bMedium = '${{ steps.cg-backend-results.outputs.medium }}' || '0';
               const bLow = '${{ steps.cg-backend-results.outputs.low }}' || '0';
               const bVulnCount = '${{ steps.cg-backend-results.outputs.vuln_count }}' || '0';
-
+              
               comment += '### 🗄️ Backend Image\n';
               comment += '| Severity | Count |\n';
               comment += '|----------|-------|\n';
@@ -230,7 +225,6 @@ jobs:
               comment += '| 🟠 High | ' + bHigh + ' |\n';
               comment += '| 🟡 Medium | ' + bMedium + ' |\n';
               comment += '| 🟢 Low | ' + bLow + ' |\n\n';
-              
               if (parseInt(bVulnCount) > 0) {
                 comment += '**' + bVulnCount + ' Critical/High vulnerabilities found.** See workflow summary for details.\n\n';
               }
@@ -243,20 +237,19 @@ jobs:
             comment += '📊 *Full scan reports available in workflow artifacts*\n';
             comment += '🔗 [View workflow run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})';
             
-            // Find existing security comment to update or create new one
             const comments = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number
             });
             
+            // ← unique marker for CG comment
             const existingComment = comments.data.find(c => 
-              c.body.includes('🛡️ Security Scan Results') && 
+              c.body.includes('🛡️ Security Scan Results (Chainguard)') && 
               c.user.type === 'Bot'
             );
             
             if (existingComment) {
-              // Update existing comment
               await github.rest.issues.updateComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -264,7 +257,6 @@ jobs:
                 body: comment
               });
             } else {
-              // Create new comment
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
