@@ -10,11 +10,9 @@ on:
         type: string
 
 env:
-  REGISTRY: sammorriscg
+  NAMESPACE: cupofpython
   FRONTEND_IMAGE_NAME: cg-e2e-frontend
   BACKEND_IMAGE_NAME: cg-e2e-backend
-  USERNAME: ${{ vars.DOCKERHUB_USERNAME }}
-  PASSWORD: ${{ secrets.DOCKERHUB_TOKEN }}
 
 jobs:
   grype:
@@ -23,17 +21,18 @@ jobs:
       - name: Check out repo
         uses: actions/checkout@v4
 
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3.4.0
+      - name: 'Login to GitHub Container Registry'
+        uses: docker/login-action@v1
         with:
-          username: ${{ env.USERNAME }}
-          password: ${{ env.PASSWORD }}
+          registry: ghcr.io
+          username: ${{github.actor}}
+          password: ${{secrets.GITHUB_TOKEN}}
       
       - name: Scan image (Frontend)
         id: frontend
         uses: anchore/scan-action@v6
         with:
-          image: ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
+          image: ${{ env.NAMESPACE }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
           fail-build: false
           output-format: json
           output-file: frontend-scan.json
@@ -42,7 +41,7 @@ jobs:
         id: backend-grype
         uses: anchore/scan-action@v6
         with:
-          image: ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
+          image: ${{ env.NAMESPACE }}/${{ env.BACKEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
           fail-build: false
           output-format: json
           output-file: backend-scan.json
