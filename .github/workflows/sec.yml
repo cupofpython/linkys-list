@@ -10,7 +10,7 @@ on:
         type: string
 
 env:
-  NAMESPACE: cupofpython
+  REGISTRY: ghcr.io/cupofpython
   FRONTEND_IMAGE_NAME: cg-e2e-frontend
   BACKEND_IMAGE_NAME: cg-e2e-backend
 
@@ -32,7 +32,7 @@ jobs:
         id: frontend
         uses: anchore/scan-action@v6
         with:
-          image: ${{ env.NAMESPACE }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
+          image: ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
           fail-build: false
           output-format: json
           output-file: frontend-scan.json
@@ -41,7 +41,7 @@ jobs:
         id: backend-grype
         uses: anchore/scan-action@v6
         with:
-          image: ${{ env.NAMESPACE }}/${{ env.BACKEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
+          image: ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
           fail-build: false
           output-format: json
           output-file: backend-scan.json
