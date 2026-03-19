@@ -194,12 +194,12 @@ jobs:
             comment += 'Image Tag: `${{ inputs.IMAGE_TAG }}`\n\n';
             
             if (frontendFound) {
-              const fCritical = '${{ steps.frontend-results.outputs.critical }}' || '0';
-              const fHigh = '${{ steps.frontend-results.outputs.high }}' || '0';
-              const fMedium = '${{ steps.frontend-results.outputs.medium }}' || '0';
-              const fLow = '${{ steps.frontend-results.outputs.low }}' || '0';
-              const fVulnCount = '${{ steps.frontend-results.outputs.vuln_count }}' || '0';
-              
+              const fCritical = '${{ steps.cg-frontend-results.outputs.critical }}' || '0';
+              const fHigh = '${{ steps.cg-frontend-results.outputs.high }}' || '0';
+              const fMedium = '${{ steps.cg-frontend-results.outputs.medium }}' || '0';
+              const fLow = '${{ steps.cg-frontend-results.outputs.low }}' || '0';
+              const fVulnCount = '${{ steps.cg-frontend-results.outputs.vuln_count }}' || '0';
+
               comment += '### 🖥️ Frontend Image\n';
               comment += '| Severity | Count |\n';
               comment += '|----------|-------|\n';
@@ -217,12 +217,12 @@ jobs:
             }
             
             if (backendFound) {
-              const bCritical = '${{ steps.backend-results.outputs.critical }}' || '0';
-              const bHigh = '${{ steps.backend-results.outputs.high }}' || '0';
-              const bMedium = '${{ steps.backend-results.outputs.medium }}' || '0';
-              const bLow = '${{ steps.backend-results.outputs.low }}' || '0';
-              const bVulnCount = '${{ steps.backend-results.outputs.vuln_count }}' || '0';
-              
+              const bCritical = '${{ steps.cg-backend-results.outputs.critical }}' || '0';
+              const bHigh = '${{ steps.cg-backend-results.outputs.high }}' || '0';
+              const bMedium = '${{ steps.cg-backend-results.outputs.medium }}' || '0';
+              const bLow = '${{ steps.cg-backend-results.outputs.low }}' || '0';
+              const bVulnCount = '${{ steps.cg-backend-results.outputs.vuln_count }}' || '0';
+
               comment += '### 🗄️ Backend Image\n';
               comment += '| Severity | Count |\n';
               comment += '|----------|-------|\n';
