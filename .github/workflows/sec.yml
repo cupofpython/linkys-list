@@ -40,6 +40,15 @@ jobs:
           output-format: json
           output-file: frontend-scan.json
 
+      - name: Scan frontend image (CG)
+        id: cg-frontend
+        uses: anchore/scan-action@v6
+        with:
+          image: ${{ env.REGISTRY }}/${{ env.NAMESPACE }}/${{ env.CG_FRONTEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
+          fail-build: false
+          output-format: json
+          output-file: cg-frontend-scan.json
+
       - name: Scan backend image (DH)
         id: backend
         uses: anchore/scan-action@v6
@@ -49,20 +58,128 @@ jobs:
           output-format: json
           output-file: backend-scan.json
 
-      - name: Display Frontend Scan Results
+      - name: Scan backend image (CG)
+        id: cg-backend
+        uses: anchore/scan-action@v6
+        with:
+          image: ${{ env.REGISTRY }}/${{ env.NAMESPACE }}/${{ env.CG_BACKEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
+          fail-build: false
+          output-format: json
+          output-file: cg-backend-scan.json
+
+      - name: Display Frontend Scan Results (DH)
         id: frontend-results
         run: .github/workflows/sec-results.sh frontend-scan.json
 
-      - name: Display Backend Scan Results
+      - name: Display Frontend Scan Results (CG)
+        id: cg-frontend-results
+        run: .github/workflows/sec-results.sh cg-frontend-scan.json
+
+      - name: Display Backend Scan Results (DH)
         id: backend-results
         run: .github/workflows/sec-results.sh backend-scan.json
 
-      - name: Comment on PR
+      - name: Display Backend Scan Results (CG)
+        id: cg-backend-results
+        run: .github/workflows/sec-results.sh cg-backend-scan.json
+
+      - name: Comment on PR (DH)
         if: github.event_name == 'pull_request' || github.event_name == 'pull_request_target'
         uses: actions/github-script@v7
         with:
           script: |
             const frontendFound = '${{ steps.frontend-results.outputs.found }}' === 'true';
+            const backendFound = '${{ steps.backend-results.outputs.found }}' === 'true';
+            
+            let comment = '## 🛡️ Security Scan Results\n\n';
+            comment += 'Image Tag: `${{ inputs.IMAGE_TAG }}`\n\n';
+            
+            if (frontendFound) {
+              const fCritical = '${{ steps.frontend-results.outputs.critical }}' || '0';
+              const fHigh = '${{ steps.frontend-results.outputs.high }}' || '0';
+              const fMedium = '${{ steps.frontend-results.outputs.medium }}' || '0';
+              const fLow = '${{ steps.frontend-results.outputs.low }}' || '0';
+              const fVulnCount = '${{ steps.frontend-results.outputs.vuln_count }}' || '0';
+              
+              comment += '### 🖥️ Frontend Image\n';
+              comment += '| Severity | Count |\n';
+              comment += '|----------|-------|\n';
+              comment += '| 🔴 Critical | ' + fCritical + ' |\n';
+              comment += '| 🟠 High | ' + fHigh + ' |\n';
+              comment += '| 🟡 Medium | ' + fMedium + ' |\n';
+              comment += '| 🟢 Low | ' + fLow + ' |\n\n';
+              
+              if (parseInt(fVulnCount) > 0) {
+                comment += '**' + fVulnCount + ' Critical/High vulnerabilities found.** See workflow summary for details.\n\n';
+              }
+            } else {
+              comment += '### 🖥️ Frontend Image\n';
+              comment += '❌ Scan file not found or scan failed\n\n';
+            }
+            
+            if (backendFound) {
+              const bCritical = '${{ steps.backend-results.outputs.critical }}' || '0';
+              const bHigh = '${{ steps.backend-results.outputs.high }}' || '0';
+              const bMedium = '${{ steps.backend-results.outputs.medium }}' || '0';
+              const bLow = '${{ steps.backend-results.outputs.low }}' || '0';
+              const bVulnCount = '${{ steps.backend-results.outputs.vuln_count }}' || '0';
+              
+              comment += '### 🗄️ Backend Image\n';
+              comment += '| Severity | Count |\n';
+              comment += '|----------|-------|\n';
+              comment += '| 🔴 Critical | ' + bCritical + ' |\n';
+              comment += '| 🟠 High | ' + bHigh + ' |\n';
+              comment += '| 🟡 Medium | ' + bMedium + ' |\n';
+              comment += '| 🟢 Low | ' + bLow + ' |\n\n';
+              
+              if (parseInt(bVulnCount) > 0) {
+                comment += '**' + bVulnCount + ' Critical/High vulnerabilities found.** See workflow summary for details.\n\n';
+              }
+            } else {
+              comment += '### 🗄️ Backend Image\n';
+              comment += '❌ Scan file not found or scan failed\n\n';
+            }
+            
+            comment += '---\n';
+            comment += '📊 *Full scan reports available in workflow artifacts*\n';
+            comment += '🔗 [View workflow run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})';
+            
+            // Find existing security comment to update or create new one
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number
+            });
+            
+            const existingComment = comments.data.find(c => 
+              c.body.includes('🛡️ Security Scan Results') && 
+              c.user.type === 'Bot'
+            );
+            
+            if (existingComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existingComment.id,
+                body: comment
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: comment
+              });
+            }
+
+      - name: Comment on PR (CG)
+        if: github.event_name == 'pull_request' || github.event_name == 'pull_request_target'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const frontendFound = '${{ steps.cg-frontend-results.outputs.found }}' === 'true';
             const backendFound = '${{ steps.backend-results.outputs.found }}' === 'true';
             
             let comment = '## 🛡️ Security Scan Results\n\n';
@@ -154,4 +271,6 @@ jobs:
           name: security-scan-reports-${{ inputs.IMAGE_TAG }}
           path: |
             frontend-scan.json
+            cg-frontend-scan.json
             backend-scan.json
+            cg-backend-scan.json

@@ -58,6 +58,11 @@ jobs:
           username: ${{github.actor}}
           password: ${{secrets.GITHUB_TOKEN}}
 
+      - name: Setup chainctl
+        uses: chainguard-dev/setup-chainctl@v0.5.0
+        with:
+          identity: ${{ secrets.CHAINCTL_IDENTITY }}
+
       - name: Build and push frontend (DH)
         run: |
           docker build frontend -t ghcr.io/${{ env.NAMESPACE }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
