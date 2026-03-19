@@ -55,10 +55,10 @@ jobs:
 
       - name: Build and push frontend (Chainguard)
         run: |
-          docker build --build-context frontend=frontend -f frontend/Dockerfile --tag ghcr.io/${{ env.NAMESPACE }}//${{ env.FRONTEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
-          docker push ghcr.io/${{ env.NAMESPACE }}//${{ env.FRONTEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
+          docker build frontend -t ghcr.io/${{ env.NAMESPACE }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
+          docker push ghcr.io/${{ env.NAMESPACE }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
 
       - name: Build and push backend (Chainguard)
         run: |
-          docker build --build-context backend=backend -f backend/Dockerfile --tag ghcr.io/${{ env.NAMESPACE }}//${{ env.BACKEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
-          docker push ghcr.io/${{ env.NAMESPACE }}//${{ env.BACKEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
+          docker build backend -t ghcr.io/${{ env.NAMESPACE }}/${{ env.BACKEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
+          docker push ghcr.io/${{ env.NAMESPACE }}/${{ env.BACKEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
