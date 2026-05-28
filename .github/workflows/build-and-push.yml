@@ -62,24 +62,11 @@ jobs:
         with:
           identity: ${{ secrets.CHAINCTL_IDENTITY }}
 
-      - name: Build and push frontend (DH)
-        run: |
-          docker build frontend -t ghcr.io/${{ env.NAMESPACE }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
-          docker push ghcr.io/${{ env.NAMESPACE }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
-
-      - name: Build and push frontend (CG)
-        run: |
-          docker build frontend -f frontend/Dockerfile.converted -t ghcr.io/${{ env.NAMESPACE }}/${{ env.CG_FRONTEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
-          docker push ghcr.io/${{ env.NAMESPACE }}/${{ env.CG_FRONTEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
-
-      - name: Build and push backend (DH)
-        run: |
-          docker build backend -t ghcr.io/${{ env.NAMESPACE }}/${{ env.BACKEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
-          docker push ghcr.io/${{ env.NAMESPACE }}/${{ env.BACKEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
-
       - name: Generate .netrc
         run: |
-          echo "machine libraries.cgr.dev login ${{ secrets.CGR_USERNAME }} password ${{ secrets.CGR_PASSWORD }}" > /tmp/.netrc
+          printf "machine libraries.cgr.dev\nlogin %s\npassword %s\n" \
+            "${{ secrets.CGR_USERNAME }}" \
+            "${{ secrets.CGR_PASSWORD }}" > /tmp/.netrc
 
       - name: Build and push backend (CG)
         run: |
