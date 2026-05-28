@@ -16,7 +16,7 @@ updates:
     directory: "/"
     schedule:
       interval: "cron"
-      cronjob: "01 13 * * *"
+      cronjob: "01 14 * * *"
       timezone: "America/New_York"
     registries:
       - chainguard-python-remediated
