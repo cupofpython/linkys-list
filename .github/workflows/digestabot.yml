@@ -17,7 +17,7 @@ jobs:
       id-token: write # used to sign the commits using gitsign
 
     steps:
-    - uses: chainguard-dev/setup-chainctl@main
+    - uses: chainguard-dev/setup-chainctl@v0.5.0
       with:
         identity: ${{ secrets.CHAINCTL_IDENTITY }}
     - uses: actions/checkout@v4

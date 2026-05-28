@@ -21,6 +21,8 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile.converted
+      secrets:
+        - netrc
     ports:
       - "5000:5000"
     depends_on:
@@ -42,3 +44,7 @@ services:
 
 volumes:
   postgres_data:
+
+secrets:
+  netrc:
+    file: .netrc

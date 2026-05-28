@@ -2,11 +2,21 @@ FROM cgr.dev/samcorp/python:3.13-dev@sha256:ec0bcde48d788bfbe985f63423a1e006c073
 
 WORKDIR /app
 
+USER root
+
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+
+RUN --mount=type=secret,id=netrc,target=/root/.netrc \
+    pip install --no-cache-dir \
+      --index-url "https://libraries.cgr.dev/python-remediated/simple" \
+      --extra-index-url "https://libraries.cgr.dev/python/simple" \
+      --extra-index-url "https://pypi.org/simple" \
+      -r requirements.txt
 
 COPY . .
 
 EXPOSE 5000
+
+USER nonroot
 
 ENTRYPOINT ["python", "app.py"]

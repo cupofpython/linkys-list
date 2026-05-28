@@ -1,0 +1,23 @@
+version: 2
+registries:
+  chainguard-python-remediated:
+    type: python-index
+    url: https://libraries.cgr.dev/python-remediated/simple
+    username: ${{secrets.CGR_USERNAME}}
+    password: ${{secrets.CGR_PASSWORD}}
+  chainguard-python:
+    type: python-index
+    url: https://libraries.cgr.dev/python/simple
+    username: ${{secrets.CGR_USERNAME}}
+    password: ${{secrets.CGR_PASSWORD}}
+
+updates:
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "cron"
+      cronjob: "01 13 * * *"
+      timezone: "America/New_York"
+    registries:
+      - chainguard-python-remediated
+      - chainguard-python
