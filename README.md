@@ -12,6 +12,9 @@ To run the standard Docker application locally, run `docker compose up --build` 
 
 To run the Chainguard application locally, run `docker compose -f compose-cg.yml up --build --force-recreate --no-deps`. To stop, run `docker compose down --rmi all --remove-orphans`.
 
+# Building individually
+To build Chainguard backend locally, simply run `DOCKER_BUILDKIT=1 docker build --secret id=netrc,src=.netrc -f backend/Dockerfile.converted -t cg-backend:latest backend/`
+
 ## How does it work?
 It uses GitHub actions to build and push images to Docker Hub, scan the images with Grype, and comments the scan results on PR action. Currently it only scans the Docker Hub base image images. Scanning the Chainguardized version is WIP.
 

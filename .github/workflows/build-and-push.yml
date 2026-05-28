@@ -3,8 +3,6 @@ name: Build and deploy images
 on:
   workflow_call:
     secrets:
-      DOCKERHUB_TOKEN:
-        required: true
       CHAINCTL_IDENTITY:
         required: true
     inputs:
@@ -79,7 +77,19 @@ jobs:
           docker build backend -t ghcr.io/${{ env.NAMESPACE }}/${{ env.BACKEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
           docker push ghcr.io/${{ env.NAMESPACE }}/${{ env.BACKEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
 
+      - name: Generate .netrc
+        run: |
+          echo "machine libraries.cgr.dev login ${{ secrets.CGR_USERNAME }} password ${{ secrets.CGR_PASSWORD }}" > /tmp/.netrc
+
       - name: Build and push backend (CG)
         run: |
-          docker build backend -f backend/Dockerfile.converted -t ghcr.io/${{ env.NAMESPACE }}/${{ env.CG_BACKEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
+          DOCKER_BUILDKIT=1 docker build \
+            --secret id=netrc,src=/tmp/.netrc \
+            -f backend/Dockerfile.converted \
+            -t ghcr.io/${{ env.NAMESPACE }}/${{ env.CG_BACKEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }} \
+            backend/
           docker push ghcr.io/${{ env.NAMESPACE }}/${{ env.CG_BACKEND_IMAGE_NAME }}:${{ inputs.IMAGE_TAG }}
+
+      - name: Cleanup .netrc
+        if: always()
+        run: rm -f /tmp/.netrc

@@ -9,7 +9,6 @@ jobs:
     with:
       IMAGE_TAG: pr-${{ github.event.number }}
     secrets:
-      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
       CHAINCTL_IDENTITY: ${{ secrets.CHAINCTL_IDENTITY }}
 
   sec:
@@ -17,5 +16,3 @@ jobs:
     uses: ./.github/workflows/sec.yml
     with:
       IMAGE_TAG: pr-${{ github.event.number }}
-    secrets:
-      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
