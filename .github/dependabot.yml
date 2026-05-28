@@ -13,10 +13,10 @@ registries:
 
 updates:
   - package-ecosystem: "pip"
-    directory: "/"
+    directory: "/backend"
     schedule:
       interval: "cron"
-      cronjob: "01 14 * * *"
+      cronjob: "03 14 * * *"
       timezone: "America/New_York"
     registries:
       - chainguard-python-remediated
