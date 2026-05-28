@@ -3,6 +3,10 @@ name: Build and deploy images
 on:
   workflow_call:
     secrets:
+      CGR_USERNAME:
+        required: true
+      CGR_PASSWORD:
+        required: true
       CHAINCTL_IDENTITY:
         required: true
     inputs:

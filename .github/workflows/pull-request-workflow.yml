@@ -9,6 +9,8 @@ jobs:
     with:
       IMAGE_TAG: pr-${{ github.event.number }}
     secrets:
+      CGR_USERNAME: ${{ secrets.CGR_USERNAME }}
+      CGR_PASSWORD: ${{ secrets.CGR_PASSWORD }}
       CHAINCTL_IDENTITY: ${{ secrets.CHAINCTL_IDENTITY }}
 
   sec:
