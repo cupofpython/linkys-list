@@ -3,4 +3,3 @@ Flask-CORS==4.0.0
 psycopg2-binary==2.9.10
 python-dotenv==1.0.0
 aiohttp==3.13.1
-tensorflow==2.21.0
