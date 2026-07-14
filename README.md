@@ -1,7 +1,7 @@
 # To-Do List Application
 
 ## What is it
-This is a simple to-do list application that uses 2 base images and 1 application image:
+This is a simple to-do list application that uses 1 images and 2 application images:
 
 - python
 - nginx
