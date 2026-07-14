@@ -1,4 +1,4 @@
-FROM cgr.dev/samcorp/nginx:1.29@sha256:6bb6d39d7e5e50d9b824ff54a9d43db239d59f2ffe90ee6ce8f41d8c7777de7c
+FROM cgr.dev/samcorp/nginx:1.29@sha256:9f29a57cb1f4ba37b7e303a4983da0c88cd02cc16d1e2282ada37cf246062a14
 
 COPY . /usr/share/nginx/html/
 
