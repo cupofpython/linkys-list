@@ -3,8 +3,7 @@ name: Image digest update
 on:
   workflow_dispatch:
   schedule:
-    - cron: "14 40 * * *"
-    - timezone: "America/New_York"
+    - cron: "40 19 * * *"
 
 jobs:
   image-update:
