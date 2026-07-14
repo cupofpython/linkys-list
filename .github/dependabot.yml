@@ -16,7 +16,7 @@ updates:
     directory: "/backend"
     schedule:
       interval: "cron"
-      cronjob: "18 15 * * *"
+      cronjob: "21 15 * * *"
       timezone: "America/New_York"
     insecure-external-code-execution: allow
     registries:

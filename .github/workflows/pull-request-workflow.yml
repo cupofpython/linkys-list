@@ -5,10 +5,8 @@ on:
 
 jobs:
   build-and-push-image:
+    if: github.actor != 'dependabot[bot]'
     uses: ./.github/workflows/build-and-push.yml
-    permissions:
-      contents: read
-      id-token: write
     with:
       IMAGE_TAG: pr-${{ github.event.number }}
     secrets:
