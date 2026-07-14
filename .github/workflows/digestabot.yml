@@ -3,8 +3,8 @@ name: Image digest update
 on:
   workflow_dispatch:
   schedule:
-    # Run at 19:21 UTC every day / 3:21 EST
-    - cron: "21 19 * * *"
+    # Run at 19:30 UTC every day / 3:30 EST
+    - cron: "30 19 * * *"
 
 jobs:
   image-update:
