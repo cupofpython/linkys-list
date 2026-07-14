@@ -5,7 +5,7 @@ on:
 
 jobs:
   build-and-push-image:
-    if: github.actor != 'dependabot[bot]'
+    if: github.actor != 'dependabot[bot]' && github.head_ref != 'update-digests'
     uses: ./.github/workflows/build-and-push.yml
     with:
       IMAGE_TAG: pr-${{ github.event.number }}
