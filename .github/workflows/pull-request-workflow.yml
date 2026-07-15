@@ -1,11 +1,13 @@
-name: Pull request workflow
+name: Pull request image build and scan workflow
 
 on:
-  pull_request
+  pull_request:
+    paths:
+      - 'frontend/**'
+      - 'backend/**'
 
 jobs:
   build-and-push-image:
-    if: github.actor != 'dependabot[bot]' && github.head_ref != 'update-digests'
     uses: ./.github/workflows/build-and-push.yml
     with:
       IMAGE_TAG: pr-${{ github.event.number }}
