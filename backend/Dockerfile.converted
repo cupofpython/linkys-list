@@ -1,4 +1,4 @@
-FROM cgr.dev/samcorp/python:3.14-dev@sha256:5540a3ba5b1b3b638b49b1818135d8846f96f2933d6af5c1c3cea718caed281e
+FROM cgr.dev/samcorp/python:3.13-dev@sha256:137ed894b4ea5e384aa7846ebe2aa405eb8f9805a89c525f44c239ab367a91b6
 
 WORKDIR /app
 
@@ -8,7 +8,7 @@ COPY requirements.txt .
 
 RUN --mount=type=secret,id=netrc,target=/root/.netrc \
     uv pip install --system --no-cache-dir \
-      --index-strategy unsafe-first-match \
+      --index-strategy unsafe-best-match \
       --index-url "https://libraries.cgr.dev/python-remediated/simple" \
       --extra-index-url "https://libraries.cgr.dev/python/simple" \
       --extra-index-url "https://pypi.org/simple" \
