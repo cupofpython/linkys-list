@@ -8,7 +8,7 @@ import time
 app = Flask(__name__)
 CORS(app)
 
-# Postgres database configuration
+# Database configuration
 DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://todouser:todopass@localhost:5432/todoapp')
 
 def get_db_connection():
