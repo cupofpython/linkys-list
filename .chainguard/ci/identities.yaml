@@ -1,0 +1,40 @@
+version: 1
+# Workload identity for the Chainguard (CG) image legs in images.yaml.
+#
+# This replaces the CGR_USERNAME / CGR_PASSWORD / CHAINCTL_IDENTITY secrets the
+# GitHub Actions workflow used. A Checks workload identity is NOT the same as your
+# existing GitHub Actions identities in `samcorp`: those trust the GitHub issuer
+# (token.actions.githubusercontent.com), while Checks issues tokens from
+# https://issuer.enforce.dev with subject `chainguard:<repo-id>:cgr-pull`.
+#
+# BEFORE THIS WORKS you must create a matching *assumable* identity in `samcorp`
+# and paste its ID into the two `identity:` fields below. See
+# docs/chainguard-checks-migration.md for the exact chainctl commands. Until then
+# the `frontend` and `backend` checks are advisory, so their CG legs fail without
+# blocking merges.
+identities:
+  cgr-pull:
+    description: Pull private cgr.dev/samcorp images and Chainguard Python libraries for the image scan checks.
+    checks:
+      - images.checks.frontend
+      - images.checks.backend
+    audiences:
+      - https://cgr.dev
+    chainguard:
+      cgr.dev:
+        # TODO: replace with the UIDP of the assumable identity you create in samcorp.
+        identity: 9b63cde9908105cdbb857a85ed3ed6f26a5a142a/494141bfcd0b2bd8
+        exchange_audience: https://cgr.dev
+        role: registry.pull
+        scopes:
+          - 9b63cde9908105cdbb857a85ed3ed6f26a5a142a  # samcorp organization ID
+      libraries.cgr.dev:
+        # TODO: same assumable identity (it must also hold the libraries.python.pull role).
+        identity: 9b63cde9908105cdbb857a85ed3ed6f26a5a142a/494141bfcd0b2bd8
+        exchange_audience: https://cgr.dev
+        role: libraries.python.pull
+        scopes:
+          - 9b63cde9908105cdbb857a85ed3ed6f26a5a142a  # samcorp organization ID
+    allow:
+      - run: presubmit
+        target_ref: refs/heads/main

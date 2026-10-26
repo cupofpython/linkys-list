@@ -1,0 +1,15 @@
+version: 1
+# Shared environment for the image build-and-scan checks in images.yaml.
+# A Chainguard Checks VM starts from a minimal base (BusyBox + GNU tar), so every
+# tool a check uses must be listed here. The docker service adds its own packages
+# (docker, iptables, busybox) and runs the Docker daemon before each check's
+# commands, exporting DOCKER_HOST so `docker` and `grype` can reach it.
+environment:
+  packages:
+    - bash   # build/scan scripts use bash features and `set -o pipefail`
+    - jq     # parse grype JSON into severity counts
+    - grype  # vulnerability scanner (replaces anchore/scan-action)
+  services:
+    - docker
+  vars:
+    DOCKER_BUILDKIT: "1"  # the Chainguard backend Dockerfile uses a BuildKit secret mount
