@@ -49,11 +49,19 @@ checks:
     when:
       changed: ["frontend/**"]
     network:
-      # TODO(discovery): temporarily allowing all hosts to find the real set.
-      # After this run: open this check's Details -> Network activity, copy the
-      # "Suggested allowlist (review before applying)", and replace ["*"] with it.
-      # The previous pinned list is in git history (the commit before this one).
-      egress: ["*"]
+      # Pinned from the discovery run's suggested allowlist (backend's list minus
+      # the Python-only hosts, which the nginx frontend build doesn't use).
+      egress:
+        # Docker Hub (DH base image: nginx:1.31)
+        - registry-1.docker.io
+        - auth.docker.io
+        - production.cloudfront.docker.com
+        # Chainguard registry (CG base image: cgr.dev/samcorp/nginx) + its data host
+        - cgr.dev
+        - 9236a389bd48b984df91adc1bc924620.r2.cloudflarestorage.com
+        # grype vulnerability database
+        - grype.anchore.io
+        - toolbox-data.anchore.io
     script: |
       set -o pipefail
       echo "Building Docker Hub frontend image..."
@@ -88,11 +96,23 @@ checks:
     when:
       changed: ["backend/**"]
     network:
-      # TODO(discovery): temporarily allowing all hosts to find the real set.
-      # After this run: open this check's Details -> Network activity, copy the
-      # "Suggested allowlist (review before applying)", and replace ["*"] with it.
-      # The previous pinned list is in git history (the commit before this one).
-      egress: ["*"]
+      # Pinned from the discovery run's suggested allowlist (PR #40, backend check).
+      egress:
+        # Docker Hub (DH base image: python:3.14) and pip during the DH build
+        - registry-1.docker.io
+        - auth.docker.io
+        - production.cloudfront.docker.com
+        - pypi.org
+        - files.pythonhosted.org
+        # Chainguard registry + Chainguard Libraries (Python) for the CG build.
+        # The cgr-pull identity injects credentials into requests to these hosts,
+        # which replaces the --mount=type=secret,id=netrc the Dockerfile expects.
+        - cgr.dev
+        - libraries.cgr.dev
+        - 9236a389bd48b984df91adc1bc924620.r2.cloudflarestorage.com
+        # grype vulnerability database
+        - grype.anchore.io
+        - toolbox-data.anchore.io
     script: |
       set -o pipefail
       echo "Building Docker Hub backend image..."
