@@ -23,14 +23,14 @@ identities:
     chainguard:
       cgr.dev:
         # TODO: replace with the UIDP of the assumable identity you create in samcorp.
-        identity: 9b63cde9908105cdbb857a85ed3ed6f26a5a142a/0000000000000000
+        identity: 9b63cde9908105cdbb857a85ed3ed6f26a5a142a/494141bfcd0b2bd8
         exchange_audience: https://cgr.dev
         role: registry.pull
         scopes:
           - 9b63cde9908105cdbb857a85ed3ed6f26a5a142a  # samcorp organization ID
       libraries.cgr.dev:
         # TODO: same assumable identity (it must also hold the libraries.python.pull role).
-        identity: 9b63cde9908105cdbb857a85ed3ed6f26a5a142a/0000000000000000
+        identity: 9b63cde9908105cdbb857a85ed3ed6f26a5a142a/494141bfcd0b2bd8
         exchange_audience: https://cgr.dev
         role: libraries.python.pull
         scopes:
