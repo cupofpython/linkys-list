@@ -1,0 +1,134 @@
+version: 1
+# Migrated from the GitHub Actions pull-request workflow
+# (.github/workflows/pull-request-workflow.yml -> build-and-push.yml + sec.yml).
+#
+# What changed in the move to Chainguard Checks:
+#   * No registry push. The old pipeline pushed images to ghcr.io only so a
+#     separate scan runner could pull them. A check builds AND scans in one VM,
+#     so we build locally and scan the local image. (The beta also gives a check
+#     no GITHUB_TOKEN, so it couldn't push to ghcr.io anyway.)
+#   * PR comments -> `::sandbox-summary::`. The github-script comment steps become
+#     a Markdown summary that shows in the check's output on GitHub.
+#   * The Chainguard (CG) image legs pull private cgr.dev/samcorp/* base images and
+#     (backend) libraries.cgr.dev. In the beta there is no `secrets` context, so
+#     this uses the `cgr-pull` workload identity from identities.yaml instead of the
+#     CGR_USERNAME/CGR_PASSWORD/.netrc secrets. See docs/chainguard-checks-migration.md.
+#   * Every check is `advisory: true`: the old grype steps used fail-build:false
+#     (report, don't block), and advisory also keeps the CG legs from blocking
+#     merges until the cgr-pull assumable identity is set up.
+#   * Not ported: artifact upload (a run keeps no downloadable files) and the
+#     cupofpython/integrity-check action (no `uses:` in Checks; the `base-images`
+#     check below is a lightweight, dependency-free stand-in).
+
+checks:
+  # Stand-in for cupofpython/integrity-check: assert the converted Dockerfiles
+  # still build FROM a Chainguard (cgr.dev) base. Runs in a bare VM (no docker).
+  base-images:
+    environment: {}
+    advisory: true
+    when:
+      changed: ["frontend/Dockerfile.converted", "backend/Dockerfile.converted"]
+    script: |
+      fail=0
+      for f in frontend/Dockerfile.converted backend/Dockerfile.converted; do
+        if grep -qE '^FROM +cgr\.dev/' "$f"; then
+          echo "ok: $f builds FROM a Chainguard base image"
+        else
+          echo "::error file=$f,line=1::base image is not from cgr.dev"
+          fail=1
+        fi
+      done
+      exit "$fail"
+
+  frontend:
+    description: Build the Docker Hub and Chainguard frontend images and scan both with grype.
+    resources: medium-amd64   # mirror the x86-64 ubuntu-latest runner; more disk for image builds
+    advisory: true
+    identity: cgr-pull        # pulls the private cgr.dev/samcorp/nginx base for the CG build
+    shell: bash
+    when:
+      changed: ["frontend/**"]
+    network:
+      egress:
+        # Docker Hub (DH base image: nginx:1.31)
+        - registry-1.docker.io
+        - auth.docker.io
+        - production.cloudflare.docker.com
+        # Chainguard registry (CG base image: cgr.dev/samcorp/nginx) + its data host
+        - cgr.dev
+        - 9236a389bd48b984df91adc1bc924620.r2.cloudflarestorage.com
+        # grype vulnerability database
+        - toolbox-data.anchore.io
+    script: |
+      set -o pipefail
+      echo "Building Docker Hub frontend image..."
+      docker build -t frontend-dh:pr -f frontend/Dockerfile frontend
+      echo "Building Chainguard frontend image..."
+      docker build -t frontend-cg:pr -f frontend/Dockerfile.converted frontend
+
+      echo "Scanning images with grype..."
+      grype -o json docker:frontend-dh:pr > /tmp/dh.json
+      grype -o json docker:frontend-cg:pr > /tmp/cg.json
+
+      sev() { jq --arg s "$2" '[.matches[] | select(.vulnerability.severity == $s)] | length' "$1"; }
+      {
+        echo '::sandbox-summary::'
+        echo '## 🛡️ Frontend image scan — Docker Hub vs Chainguard'
+        echo
+        echo '| Severity | 🐳 Docker Hub | 🔗 Chainguard |'
+        echo '|----------|--------------:|--------------:|'
+        for s in Critical High Medium Low; do
+          printf '| %s | %s | %s |\n' "$s" "$(sev /tmp/dh.json "$s")" "$(sev /tmp/cg.json "$s")"
+        done
+        echo
+        echo '::end-sandbox-summary::'
+      }
+
+  backend:
+    description: Build the Docker Hub and Chainguard backend images and scan both with grype.
+    resources: medium-amd64
+    advisory: true
+    identity: cgr-pull        # pulls cgr.dev/samcorp/python + libraries.cgr.dev for the CG build
+    shell: bash
+    when:
+      changed: ["backend/**"]
+    network:
+      egress:
+        # Docker Hub (DH base image: python:3.14) and pip during the DH build
+        - registry-1.docker.io
+        - auth.docker.io
+        - production.cloudflare.docker.com
+        - pypi.org
+        - files.pythonhosted.org
+        # Chainguard registry + Chainguard Libraries (Python) for the CG build.
+        # The cgr-pull identity injects credentials into requests to these hosts,
+        # which replaces the --mount=type=secret,id=netrc the Dockerfile expects.
+        - cgr.dev
+        - libraries.cgr.dev
+        - 9236a389bd48b984df91adc1bc924620.r2.cloudflarestorage.com
+        # grype vulnerability database
+        - toolbox-data.anchore.io
+    script: |
+      set -o pipefail
+      echo "Building Docker Hub backend image..."
+      docker build -t backend-dh:pr -f backend/Dockerfile backend
+      echo "Building Chainguard backend image..."
+      docker build -t backend-cg:pr -f backend/Dockerfile.converted backend
+
+      echo "Scanning images with grype..."
+      grype -o json docker:backend-dh:pr > /tmp/dh.json
+      grype -o json docker:backend-cg:pr > /tmp/cg.json
+
+      sev() { jq --arg s "$2" '[.matches[] | select(.vulnerability.severity == $s)] | length' "$1"; }
+      {
+        echo '::sandbox-summary::'
+        echo '## 🛡️ Backend image scan — Docker Hub vs Chainguard'
+        echo
+        echo '| Severity | 🐳 Docker Hub | 🔗 Chainguard |'
+        echo '|----------|--------------:|--------------:|'
+        for s in Critical High Medium Low; do
+          printf '| %s | %s | %s |\n' "$s" "$(sev /tmp/dh.json "$s")" "$(sev /tmp/cg.json "$s")"
+        done
+        echo
+        echo '::end-sandbox-summary::'
+      }
