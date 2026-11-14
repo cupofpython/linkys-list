@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   db:
-    image: cgr.dev/samcorp/postgres:17@sha256:7cc2c66c93565a2a277ba29f7ddf0511dcc6c54558795edc66b2935a0123f450
+    image: cgr.dev/samcorp/postgres:17@sha256:d4480723ddd2f17a6a7786798f229e9d0194d5403a66efc591f2a53c3adb973d
     environment:
       POSTGRES_DB: todoapp
       POSTGRES_USER: todouser
