@@ -1,4 +1,4 @@
-FROM cgr.dev/samcorp/python:3.13-dev@sha256:86624ddb380765dc4365d62c3d6e8705cc3dfe7ab83dcf8c8ad03427a4d32f28
+FROM cgr.dev/samcorp/python:3.13-dev@sha256:7015c6f579272966c4796f9795d66c33078419c424ac5b920f82b54ab9de5ee4
 
 WORKDIR /app
 
